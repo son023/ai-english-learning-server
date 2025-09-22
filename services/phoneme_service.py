@@ -1,4 +1,4 @@
-# File: services/phoneme_service.py (Phiên bản Sửa lỗi Cuối cùng)
+# services/phoneme_service.py 
 
 import base64
 import io
@@ -7,7 +7,6 @@ import soundfile as sf
 import traceback
 from typing import Optional
 
-# Thêm import cho Processor và Pipeline
 from transformers import pipeline, Wav2Vec2Processor
 
 class PhonemeService:
@@ -37,7 +36,7 @@ class PhonemeService:
             print("✅ Khởi tạo PhonemeService thành công!")
 
         except Exception as e:
-            print(f"❌ GẶP LỖI NGHIÊM TRỌNG KHI KHỞI TẠO PHONEMESERVICE:")
+            print(f"LỖI KHỞI TẠO PHONEMESERVICE:")
             traceback.print_exc()
             # Ném lại lỗi để server không khởi động nếu service này bị hỏng
             raise e
@@ -58,7 +57,7 @@ class PhonemeService:
             if max_abs_val > 0:
                 audio_data /= max_abs_val
             else:
-                return "" # Trả về rỗng nếu audio im lặng
+                return "" 
 
             input_dict = {"sampling_rate": sample_rate, "raw": audio_data}
             result = self.transcriber(input_dict)

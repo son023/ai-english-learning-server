@@ -3,11 +3,11 @@ from typing import List, Optional, Any
 
 class PronunciationScore(BaseModel):
     """Pronunciation scoring results"""
-    pronunciation: float  # 0-100
-    fluency: float       # 0-100  
-    intonation: float    # 0-100
-    stress: float        # 0-100
-    overall: float       # 0-100
+    pronunciation: float 
+    fluency: float       
+    intonation: float  
+    stress: float      
+    overall: float     
 
 class WordError(BaseModel):
     """Word-level pronunciation error with position highlighting"""
@@ -79,18 +79,15 @@ class PhoneticPronunciationResponse(BaseModel):
     wer_score: float # Tỷ lệ lỗi âm vị (Phoneme Error Rate)
     confidence: float # Độ tin cậy của Whisper
 
-    # File: models.py (thêm class này)
-
 class PhonemeData(BaseModel):
     word: str
     phoneme: str
 
-# Sửa lại PhoneticPronunciationResponse
 class PhoneticPronunciationResponse(BaseModel):
     original_sentence: str
     transcribed_text: str
-    reference_phonemes: List[PhonemeData] # <--- Sửa thành List[PhonemeData]
-    learner_phonemes: List[PhonemeData]   # <--- Sửa thành List[PhonemeData]
+    reference_phonemes: List[PhonemeData] 
+    learner_phonemes: List[PhonemeData]  
     scores: PronunciationScore
     phoneme_errors: List[dict]
     feedback: str

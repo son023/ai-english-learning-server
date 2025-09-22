@@ -1,4 +1,4 @@
-# File: services/pronunciation_service.py
+# services/pronunciation_service.py
 
 import difflib
 import string
@@ -56,9 +56,9 @@ class PronunciationService:
         
         return PronunciationScore(
             pronunciation=round(pronunciation_score, 1),
-            fluency=0.0, # Sẽ cần mô hình khác để đánh giá
-            intonation=0.0, # Sẽ cần mô hình khác để đánh giá
-            stress=0.0, # Sẽ cần mô hình khác để đánh giá
+            fluency=0.0, 
+            intonation=0.0, 
+            stress=0.0, 
             overall=round(pronunciation_score, 1)
         )
     
