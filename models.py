@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import List, Optional, Any
 
 class PronunciationScore(BaseModel):
     """Pronunciation scoring results"""
@@ -64,3 +64,35 @@ class AudioAnalysis(BaseModel):
     channels: int
     issues: List[str]
     quality_score: float
+
+class PhoneticPronunciationResponse(BaseModel):
+    """
+    Mô hình response cho việc đánh giá phát âm dựa trên âm vị.
+    """
+    original_sentence: str
+    transcribed_text: str  # Văn bản được Whisper phiên âm
+    reference_phonemes: str # Chuỗi âm vị chuẩn
+    learner_phonemes: str   # Chuỗi âm vị của người học
+    scores: PronunciationScore
+    phoneme_errors: List[dict] # Danh sách các lỗi sai về âm vị
+    feedback: str # Phản hồi từ LLM
+    wer_score: float # Tỷ lệ lỗi âm vị (Phoneme Error Rate)
+    confidence: float # Độ tin cậy của Whisper
+
+    # File: models.py (thêm class này)
+
+class PhonemeData(BaseModel):
+    word: str
+    phoneme: str
+
+# Sửa lại PhoneticPronunciationResponse
+class PhoneticPronunciationResponse(BaseModel):
+    original_sentence: str
+    transcribed_text: str
+    reference_phonemes: List[PhonemeData] # <--- Sửa thành List[PhonemeData]
+    learner_phonemes: List[PhonemeData]   # <--- Sửa thành List[PhonemeData]
+    scores: PronunciationScore
+    phoneme_errors: List[dict]
+    feedback: str
+    wer_score: float
+    confidence: float
