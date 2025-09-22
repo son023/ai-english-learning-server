@@ -66,6 +66,15 @@ def test_phonetic_pronunciation(audio_file_path: str, reference_sentence: str, t
             for item in learner_phonemes:
                 print(f"     - {item['word']:<15}: {item['phoneme']}")
 
+            # --- Hiển thị tỉ lệ accuracy từng từ ---
+            word_accuracy = result.get('word_accuracy', [])
+            if word_accuracy:
+                print("\n📊 WORD ACCURACY ANALYSIS:")
+                for i, accuracy_data in enumerate(word_accuracy, 1):
+                    accuracy = accuracy_data['accuracy_percentage']
+                    status_icon = "✅" if accuracy >= 90 else "⚠️" if accuracy >= 70 else "❌"
+                    print(f"   {i:2d}. {status_icon} '{accuracy_data['word']:<15}': {accuracy:5.1f}%")
+
             # ... (phần hiển thị điểm số giữ nguyên) ...
 
             # --- Hiển thị lỗi sai chi tiết ---

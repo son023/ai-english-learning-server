@@ -714,3 +714,73 @@ RuntimeError: espeak not installed on your system
 2025-09-23 00:33:03,196 - api_logger - INFO - [4ea14dec] Đã phiên âm từng từ cho câu gốc.
 2025-09-23 00:33:04,825 - api_logger - INFO - [4ea14dec] Đã phiên âm từng từ cho câu của người học.
 2025-09-23 00:33:04,825 - api_logger - INFO - [4ea14dec] Xử lý yêu cầu thành công.
+2025-09-23 00:45:11,842 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-23 00:45:11,842 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-23 00:48:52,399 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-23 00:48:52,399 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-23 00:49:45,556 - api_logger - INFO - [c7e2ab5f] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 00:49:47,159 - api_logger - INFO - [c7e2ab5f] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 00:49:47,159 - api_logger - INFO - [c7e2ab5f] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 00:49:47,159 - api_logger - INFO - [c7e2ab5f] Xử lý yêu cầu thành công.
+2025-09-23 01:00:30,669 - api_logger - INFO - [2d09c93b] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:00:33,575 - api_logger - INFO - [2d09c93b] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:00:35,134 - api_logger - INFO - [2d09c93b] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:00:35,134 - api_logger - INFO - [2d09c93b] Xử lý yêu cầu thành công.
+2025-09-23 01:00:37,210 - api_logger - INFO - [000f27a2] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:00:39,965 - api_logger - INFO - [000f27a2] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:00:41,737 - api_logger - INFO - [000f27a2] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:00:41,737 - api_logger - INFO - [000f27a2] Xử lý yêu cầu thành công.
+2025-09-23 01:00:43,777 - api_logger - INFO - [6cb9ce81] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Interesting'
+2025-09-23 01:00:45,051 - api_logger - INFO - [6cb9ce81] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:00:45,276 - api_logger - INFO - [6cb9ce81] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:00:45,277 - api_logger - INFO - [6cb9ce81] Xử lý yêu cầu thành công.
+2025-09-23 01:00:47,313 - api_logger - INFO - [c8810dfd] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Interesting'
+2025-09-23 01:00:48,661 - api_logger - INFO - [c8810dfd] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:00:49,105 - api_logger - INFO - [c8810dfd] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:00:49,105 - api_logger - INFO - [c8810dfd] Xử lý yêu cầu thành công.
+2025-09-23 01:00:51,179 - api_logger - INFO - [d6210185] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'I would like to watch YouTube'
+2025-09-23 01:00:53,605 - api_logger - INFO - [d6210185] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:00:54,630 - api_logger - INFO - [d6210185] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:00:54,630 - api_logger - INFO - [d6210185] Xử lý yêu cầu thành công.
+2025-09-23 01:00:56,707 - api_logger - INFO - [bd4af5a8] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'I would like to watch YouTube'
+2025-09-23 01:00:59,300 - api_logger - INFO - [bd4af5a8] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:01:00,847 - api_logger - INFO - [bd4af5a8] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:01:00,848 - api_logger - INFO - [bd4af5a8] Xử lý yêu cầu thành công.
+2025-09-23 01:08:50,125 - api_logger - INFO - [241c2637] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:08:51,583 - api_logger - INFO - [241c2637] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:08:51,583 - api_logger - INFO - [241c2637] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:08:51,584 - api_logger - INFO - [241c2637] Xử lý yêu cầu thành công.
+2025-09-23 01:13:47,999 - api_logger - INFO - [bd69b9d0] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:13:51,001 - api_logger - INFO - [bd69b9d0] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:13:52,465 - api_logger - INFO - [bd69b9d0] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:13:52,465 - api_logger - INFO - [bd69b9d0] Xử lý yêu cầu thành công.
+2025-09-23 01:14:33,421 - api_logger - INFO - [095eaa40] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is they 13th of May 2023'
+2025-09-23 01:14:36,372 - api_logger - INFO - [095eaa40] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:14:37,841 - api_logger - INFO - [095eaa40] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:14:37,841 - api_logger - INFO - [095eaa40] Xử lý yêu cầu thành công.
+2025-09-23 01:43:57,626 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-23 01:43:57,626 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-23 01:44:09,000 - api_logger - INFO - [b4c7b8e5] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:44:11,877 - api_logger - INFO - [b4c7b8e5] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:13,430 - api_logger - INFO - [b4c7b8e5] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:13,431 - api_logger - INFO - [b4c7b8e5] Xử lý yêu cầu thành công.
+2025-09-23 01:44:15,496 - api_logger - INFO - [ad016149] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Today is the 13th of May 2023'
+2025-09-23 01:44:18,362 - api_logger - INFO - [ad016149] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:20,179 - api_logger - INFO - [ad016149] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:20,180 - api_logger - INFO - [ad016149] Xử lý yêu cầu thành công.
+2025-09-23 01:44:22,261 - api_logger - INFO - [74097975] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Interesting'
+2025-09-23 01:44:23,532 - api_logger - INFO - [74097975] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:23,770 - api_logger - INFO - [74097975] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:23,770 - api_logger - INFO - [74097975] Xử lý yêu cầu thành công.
+2025-09-23 01:44:25,842 - api_logger - INFO - [79e06cc4] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Interesting'
+2025-09-23 01:44:27,201 - api_logger - INFO - [79e06cc4] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:27,605 - api_logger - INFO - [79e06cc4] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:27,605 - api_logger - INFO - [79e06cc4] Xử lý yêu cầu thành công.
+2025-09-23 01:44:29,631 - api_logger - INFO - [31dcb0fd] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'I would like to watch YouTube'
+2025-09-23 01:44:32,077 - api_logger - INFO - [31dcb0fd] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:33,230 - api_logger - INFO - [31dcb0fd] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:33,230 - api_logger - INFO - [31dcb0fd] Xử lý yêu cầu thành công.
+2025-09-23 01:44:35,285 - api_logger - INFO - [35879436] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'I would like to watch YouTube'
+2025-09-23 01:44:37,866 - api_logger - INFO - [35879436] Đã phiên âm từng từ cho câu gốc.
+2025-09-23 01:44:39,271 - api_logger - INFO - [35879436] Đã phiên âm từng từ cho câu của người học.
+2025-09-23 01:44:39,271 - api_logger - INFO - [35879436] Xử lý yêu cầu thành công.

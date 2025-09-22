@@ -4,7 +4,7 @@ import difflib
 import string
 from typing import List, Tuple
 from jiwer import wer
-from models import PhonemeData, PronunciationScore, WordError # WordError có thể đổi tên thành PhonemeError
+from models import PhonemeData, PronunciationScore, WordError, WordAccuracyData # WordError có thể đổi tên thành PhonemeError
 
 class PronunciationService:
     """
@@ -162,3 +162,72 @@ class PronunciationService:
                 for j in range(j1, j2):
                     errors.append({"type": "insertion", "extra_word": learner[j].word})
         return errors
+
+    def calculate_word_accuracy(self, reference: List[PhonemeData], learner: List[PhonemeData]) -> List[WordAccuracyData]:
+        """Tính tỉ lệ accuracy cho từng từ."""
+        ref_words = [item.word for item in reference]
+        learner_words = [item.word for item in learner]
+        
+        matcher = difflib.SequenceMatcher(None, ref_words, learner_words)
+        word_accuracy = []
+
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                # Từ giống nhau, kiểm tra phiên âm
+                for i in range(i1, i2):
+                    ref_phoneme = reference[i].phoneme
+                    learner_phoneme = learner[i].phoneme
+                    
+                    # Tính tỉ lệ accuracy bằng cách so sánh ký tự
+                    accuracy = self.calculate_phoneme_similarity(ref_phoneme, learner_phoneme) * 100
+                    
+                    word_accuracy.append(WordAccuracyData(
+                        word=reference[i].word,
+                        accuracy_percentage=round(accuracy, 1)
+                    ))
+                    
+            elif tag == 'replace':
+                # Từ bị thay thế
+                max_len = max(i2 - i1, j2 - j1)
+                for idx in range(max_len):
+                    ref_idx = i1 + idx if i1 + idx < i2 else None
+                    learner_idx = j1 + idx if j1 + idx < j2 else None
+                    
+                    if ref_idx is not None:
+                        if learner_idx is not None:
+                            # Cả hai từ tồn tại - từ bị thay thế
+                            accuracy = self.calculate_phoneme_similarity(
+                                reference[ref_idx].phoneme, 
+                                learner[learner_idx].phoneme
+                            ) * 100
+                            word_accuracy.append(WordAccuracyData(
+                                word=reference[ref_idx].word,
+                                accuracy_percentage=round(accuracy, 1)
+                            ))
+                        else:
+                            # Từ bị thiếu
+                            word_accuracy.append(WordAccuracyData(
+                                word=reference[ref_idx].word,
+                                accuracy_percentage=0.0
+                            ))
+                    
+            elif tag == 'delete':
+                # Từ bị thiếu
+                for i in range(i1, i2):
+                    word_accuracy.append(WordAccuracyData(
+                        word=reference[i].word,
+                        accuracy_percentage=0.0
+                    ))
+        
+        return word_accuracy
+
+    def calculate_phoneme_similarity(self, phoneme1: str, phoneme2: str) -> float:
+        """Tính toán tỉ lệ tương đồng giữa hai chuỗi phiên âm."""
+        if not phoneme1 and not phoneme2:
+            return 1.0
+        if not phoneme1 or not phoneme2:
+            return 0.0
+        
+        # Sử dụng SequenceMatcher để tính tỉ lệ tương đồng
+        matcher = difflib.SequenceMatcher(None, phoneme1, phoneme2)
+        return matcher.ratio()
