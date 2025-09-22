@@ -83,11 +83,16 @@ class PhonemeData(BaseModel):
     word: str
     phoneme: str
 
+class WordAccuracyData(BaseModel):
+    word: str
+    accuracy_percentage: float  # Tỉ lệ % phiên âm đúng (0.0 - 100.0)
+
 class PhoneticPronunciationResponse(BaseModel):
     original_sentence: str
     transcribed_text: str
     reference_phonemes: List[PhonemeData] 
-    learner_phonemes: List[PhonemeData]  
+    learner_phonemes: List[PhonemeData]
+    word_accuracy: List[WordAccuracyData]  # Thêm trường accuracy cho từng từ
     scores: PronunciationScore
     phoneme_errors: List[dict]
     feedback: str

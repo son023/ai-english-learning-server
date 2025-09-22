@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 
-from models import PhonemeData, PronunciationRequest, PhoneticPronunciationResponse, PronunciationResponse
+from models import PhonemeData, PronunciationRequest, PhoneticPronunciationResponse, PronunciationResponse, WordAccuracyData
 
 from services.whisper_service import WhisperService
 from services.pronunciation_service import PronunciationService
@@ -94,6 +94,12 @@ async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
             learner_phonemes=learner_phonemes_list
         )
 
+        # Tính accuracy cho từng từ
+        word_accuracy = pronunciation_service.calculate_word_accuracy(
+            reference=reference_phonemes_list,
+            learner=learner_phonemes_list
+        )
+
         feedback = "Default feedback."
         try:
             word_errors_for_llm = [{
@@ -116,8 +122,8 @@ async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
         return PhoneticPronunciationResponse(
             original_sentence=request.sentence, transcribed_text=transcribed_text,
             reference_phonemes=reference_phonemes_list, learner_phonemes=learner_phonemes_list,
-            scores=scores, phoneme_errors=phoneme_errors, feedback=feedback,
-            wer_score=wer_score, confidence=confidence
+            word_accuracy=word_accuracy, scores=scores, phoneme_errors=phoneme_errors, 
+            feedback=feedback, wer_score=wer_score, confidence=confidence
         )
 
     except HTTPException:
