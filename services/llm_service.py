@@ -3,7 +3,6 @@ from typing import List
 from models import PronunciationScore, WordError
 import requests
 
-# Load environment variables from .env.new file
 def load_env_new():
     """Load environment variables from .env.new file"""
     try:
@@ -40,12 +39,10 @@ class LLMService:
                                       wer_score: float) -> str:
         """Tạo phản hồi phát âm bằng tiếng Việt từ Gemini AI"""
         
-        # Return empty if no API key
         if not self.gemini_api_key:
             return ""
         
         try:
-            # Tạo prompt chi tiết bằng tiếng Việt
             error_summary = self._format_errors(word_errors)
             
             prompt = f"""Bạn là một giáo viên tiếng Anh chuyên nghiệp, chuyên giúp học viên người Việt cải thiện phát âm. Hãy cung cấp phản hồi chi tiết, mang tính xây dựng về lỗi phát âm với cách tiếp cận động viên và giáo dục.
@@ -95,7 +92,6 @@ Kết thúc bằng thông điệp động viên nhấn mạnh tiến bộ, sự 
 
 Hãy tạo phản hồi bằng tiếng Việt:"""
 
-            # Call Gemini API
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_api_key}"
             
             data = {
