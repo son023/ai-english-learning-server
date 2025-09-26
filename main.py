@@ -15,6 +15,7 @@ from services.whisper_service import WhisperService
 from services.pronunciation_service import PronunciationService
 from services.llm_service import LLMService
 from services.phoneme_service import PhonemeService
+from services.gopt_service import GOPTService
 from phonemizer import phonemize
 
 # --- Cấu hình logging ---
@@ -54,6 +55,7 @@ whisper_service = WhisperService(model_size="small")
 pronunciation_service = PronunciationService()
 llm_service = LLMService()
 phoneme_service = PhonemeService()
+gopt_service = GOPTService(model_path="best_audio_model.pth")
 
 # --- Các Endpoints ---
 
@@ -93,6 +95,24 @@ async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
             reference_phonemes=reference_phonemes_list, 
             learner_phonemes=learner_phonemes_list
         )
+
+        # Sử dụng GOPT để đánh giá chi tiết pronunciation, fluency, intonation, stress
+        if gopt_service.is_available():
+            try:
+                gopt_result = gopt_service.evaluate_pronunciation_gopt(request.audio_base64, request.sentence)
+                if "error" not in gopt_result:
+                    utterance_scores = gopt_result["utterance_scores"]
+                    # Cập nhật scores với kết quả từ GOPT
+                    scores.pronunciation = utterance_scores["accuracy"]
+                    scores.fluency = utterance_scores["fluency"]
+                    scores.intonation = utterance_scores["prosodic"]  # prosodic mapping to intonation
+                    scores.stress = utterance_scores["completeness"]  # completeness mapping to stress
+                    scores.overall = utterance_scores["total"]
+                    logger.info(f"[{request_id}] GOPT evaluation successful - Overall: {scores.overall:.1f}")
+                else:
+                    logger.warning(f"[{request_id}] GOPT evaluation failed: {gopt_result['error']}")
+            except Exception as e:
+                logger.warning(f"[{request_id}] GOPT evaluation error: {e}")
 
         # Tính accuracy cho từng từ
         word_accuracy = pronunciation_service.calculate_word_accuracy(

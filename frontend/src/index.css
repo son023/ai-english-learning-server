@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-200 transition-all duration-300 hover:shadow-xl backdrop-blur-sm;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-gray-700 px-6 py-3 rounded-lg font-semibold shadow-md border border-gray-300 hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:hover:scale-100;
+  }
+  
+  .score-excellent {
+    @apply bg-gradient-to-r from-green-400 to-emerald-500;
+  }
+  
+  .score-good {
+    @apply bg-gradient-to-r from-blue-400 to-cyan-500;
+  }
+  
+  .score-fair {
+    @apply bg-gradient-to-r from-yellow-400 to-orange-500;
+  }
+  
+  .score-poor {
+    @apply bg-gradient-to-r from-red-400 to-pink-500;
+  }
+  
+  /* Scrollbar styling */
+  .overflow-y-auto::-webkit-scrollbar {
+    @apply w-2;
+  }
+  
+  .overflow-y-auto::-webkit-scrollbar-track {
+    @apply bg-gray-100 rounded-full;
+  }
+  
+  .overflow-y-auto::-webkit-scrollbar-thumb {
+    @apply bg-gradient-to-b from-blue-400 to-indigo-500 rounded-full hover:from-blue-500 hover:to-indigo-600;
+  }
+  
+  /* Animation for progress bars */
+  @keyframes progressLoad {
+    from { width: 0%; }
+    to { width: var(--progress-width); }
+  }
+  
+  .progress-animate {
+    animation: progressLoad 1s ease-out forwards;
+  }
+}

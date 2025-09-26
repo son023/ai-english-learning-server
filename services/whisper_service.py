@@ -3,6 +3,7 @@ import base64
 import io
 import numpy as np
 import soundfile as sf
+from pydub import AudioSegment
 from typing import Tuple
 
 class WhisperService:
@@ -27,7 +28,23 @@ class WhisperService:
         try:
             audio_bytes = base64.b64decode(audio_base64)
             
-            audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
+            # Dùng pydub để handle nhiều format (WebM, MP4, WAV, etc.)
+            try:
+                # Thử đọc với pydub trước
+                audio_segment = AudioSegment.from_file(io.BytesIO(audio_bytes))
+                
+                # Convert to WAV format in memory
+                wav_buffer = io.BytesIO()
+                audio_segment.export(wav_buffer, format="wav")
+                wav_buffer.seek(0)
+                
+                # Bây giờ dùng soundfile để đọc WAV
+                audio_data, sample_rate = sf.read(wav_buffer)
+                
+            except Exception as pydub_error:
+                print(f"Pydub failed, trying soundfile directly: {pydub_error}")
+                # Fallback to soundfile (for WAV files)
+                audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
             
             # Ensure mono audio and correct dtype for Whisper
             if len(audio_data.shape) > 1:
