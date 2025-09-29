@@ -31,7 +31,6 @@ class PronunciationService:
             pass
         try:
             # Trigger DTW import path and a tiny compute
-            from .WordMatching import get_best_mapped_words_dtw
             _ = get_best_mapped_words_dtw(["a"], ["a"])  
         except Exception:
             pass
