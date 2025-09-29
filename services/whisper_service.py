@@ -16,6 +16,24 @@ class WhisperService:
         self.model = whisper.load_model(model_size)
         self.model_size = model_size
     
+    def warmup(self) -> None:
+        """Run a tiny, fast transcription to warm caches and kernels."""
+        try:
+            # 0.2s of silence at 16kHz
+            sr = 16000
+            silence = np.zeros(int(0.2 * sr), dtype=np.float32)
+            _ = self.model.transcribe(
+                silence,
+                language="en",
+                task="transcribe",
+                fp16=False,
+                temperature=0.0,
+                condition_on_previous_text=False
+            )
+        except Exception:
+            # Warmup is best-effort; ignore failures
+            pass
+    
     def transcribe_audio_base64(self, audio_base64: str) -> Tuple[str, float]:
         """
         Transcribe audio from base64 encoded data with enhanced preprocessing
