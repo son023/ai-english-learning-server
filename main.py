@@ -1,5 +1,3 @@
-# main.py 
-
 import uvicorn
 import os
 import logging
@@ -11,14 +9,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
 from phonemizer.separator import Separator
 
-from models import PhonemeData, PronunciationRequest, PhoneticPronunciationResponse, PronunciationResponse, WordAccuracyData
+from models import  PronunciationRequest, PhoneticPronunciationResponse, PronunciationResponse, WordAccuracyData
 
 from services.whisper_service import WhisperService
 from services.pronunciation_service import PronunciationService
 from services.llm_service import LLMService
-from services.phoneme_service import PhonemeService
-# from services.gopt_service import GOPTService
-from phonemizer import phonemize
 
 # --- Cấu hình logging ---
 log_file = "app.log"
@@ -56,9 +51,6 @@ app.add_middleware(
 whisper_service = WhisperService(model_size="small")
 pronunciation_service = PronunciationService()
 llm_service = LLMService()
-phoneme_service = PhonemeService()
-
-# --- Các Endpoints ---
 
 @app.get("/")
 async def root():
@@ -66,101 +58,15 @@ async def root():
 
 @app.post("/evaluate-pronunciation-phonetic", response_model=PhoneticPronunciationResponse)
 async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
-    request_id = os.urandom(4).hex()
-    logger.info(f"[{request_id}] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: '{request.sentence}'")
-    
-    try:
-        transcribed_text, confidence = whisper_service.transcribe_audio_base64(request.audio_base64)
-        if transcribed_text is None:
-            raise HTTPException(status_code=500, detail="Could not transcribe audio.")
-
-        # Dùng vòng lặp để phiên âm TỪNG TỪ MỘT ---
-        
-        # Phiên âm câu gốc
-        original_words = request.sentence.split()
-       
-        sep = Separator(phone=' ', syllable='', word='|')
-        ref_phonemes_batched = phonemize(
-            original_words,
-            language='en-us', backend='espeak', with_stress=True,
-            strip=True, separator=sep, njobs=1
-        )
-        # phonemize trả về list cùng độ dài original_words
-        reference_phonemes_list = [
-            PhonemeData(word=w, phoneme=p.strip()) for w, p in zip(original_words, ref_phonemes_batched)
-        ]
-
-        # Phiên âm câu của người học
-        learner_words = transcribed_text.split()
-        sep = Separator(phone=' ', syllable='', word='|')
-        learner_phonemes_batched = phonemize(
-            learner_words,
-            language='en-us', backend='espeak', with_stress=True,
-            strip=True, separator=sep, njobs=1
-        )
-        learner_phonemes_list = [
-            PhonemeData(word=w, phoneme=p.strip()) for w, p in zip(learner_words, learner_phonemes_batched)
-        ]
-
-        scores, phoneme_errors, wer_score = pronunciation_service.evaluate_pronunciation_phonemes_by_word(
-            reference_phonemes=reference_phonemes_list, 
-            learner_phonemes=learner_phonemes_list
-        )
-        # # Sử dụng GOPT để đánh giá chi tiết pronunciation, fluency, intonation, stress
-        # if gopt_service.is_available():
-        #     try:
-        #         gopt_result = gopt_service.evaluate_pronunciation_gopt(request.audio_base64, request.sentence)
-        #         if "error" not in gopt_result:
-        #             utterance_scores = gopt_result["utterance_scores"]
-        #             # Cập nhật scores với kết quả từ GOPT
-        #             scores.pronunciation = utterance_scores["accuracy"]
-        #             scores.fluency = utterance_scores["fluency"]
-        #             scores.intonation = utterance_scores["prosodic"]  # prosodic mapping to intonation
-        #             scores.stress = utterance_scores["completeness"]  # completeness mapping to stress
-        #             scores.overall = utterance_scores["total"]
-        #             logger.info(f"[{request_id}] GOPT evaluation successful - Overall: {scores.overall:.1f}")
-        #         else:
-        #             logger.warning(f"[{request_id}] GOPT evaluation failed: {gopt_result['error']}")
-        #     except Exception as e:
-        #         logger.warning(f"[{request_id}] GOPT evaluation error: {e}")
-
-        # Tính accuracy cho từng từ
-        word_accuracy = pronunciation_service.calculate_word_accuracy(
-            reference=reference_phonemes_list,
-            learner=learner_phonemes_list
-        )
-
-        feedback = "Default feedback."
-        try:
-            word_errors_for_llm = [{
-                "error_type": err.get('type', 'unknown'), 
-                "expected": err.get('expected_word') or err.get('expected_phoneme', ''), 
-                "actual": err.get('actual_word') or err.get('actual_phoneme', '')
-            } for err in phoneme_errors]
-            
-            feedback = llm_service.generate_pronunciation_feedback(
-                original_sentence=request.sentence, transcribed_text=transcribed_text, scores=scores,
-                word_errors=word_errors_for_llm, wer_score=wer_score
-            )
-            if not feedback or not feedback.strip():
-                feedback = "AI feedback is currently unavailable."
-        except Exception:
-            logger.exception(f"[{request_id}] LLM feedback generation failed.")
-            feedback = "Could not generate AI feedback at this time."
-
-        logger.info(f"[{request_id}] Xử lý yêu cầu thành công.")
-        return PhoneticPronunciationResponse(
-            original_sentence=request.sentence, transcribed_text=transcribed_text,
-            reference_phonemes=reference_phonemes_list, learner_phonemes=learner_phonemes_list,
-            word_accuracy=word_accuracy, scores=scores, phoneme_errors=phoneme_errors, 
-            feedback=feedback, wer_score=wer_score, confidence=confidence
-        )
-
-    except HTTPException:
-        raise
-    except Exception:
-        logger.exception(f"[{request_id}] Đã xảy ra lỗi không mong muốn.")
-        raise HTTPException(status_code=500, detail="An internal server error occurred.")
+    return pronunciation_service.process_phonetic_evaluation(request, whisper_service, llm_service)
 
 if __name__ == "__main__":
+    try:
+        whisper_service.warmup()
+    except Exception:
+        pass
+    try:
+        pronunciation_service.warmup()
+    except Exception:
+        pass
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

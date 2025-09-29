@@ -154,7 +154,7 @@ const PronunciationPractice = () => {
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
             AI English Pronunciation Practice
           </h1>
-          <p className="text-gray-600 mt-1">Luyện tập phát âm tiếng Anh với AI thông minh - GOPT Technology</p>
+          <p className="text-gray-600 mt-1">Luyện tập phát âm tiếng Anh với AI thông minh</p>
         </div>
       </header>
 
