@@ -5,6 +5,7 @@ import numpy as np
 import soundfile as sf
 from pydub import AudioSegment
 from typing import Tuple
+import soxr
 
 class WhisperService:
     """
@@ -46,13 +47,17 @@ class WhisperService:
                 # Fallback to soundfile (for WAV files)
                 audio_data, sample_rate = sf.read(io.BytesIO(audio_bytes))
             
-            # Ensure mono audio and correct dtype for Whisper
+            # Ensure mono audio and keep computations in float32
             if len(audio_data.shape) > 1:
-                audio_data = np.mean(audio_data, axis=1)
-            
-            # Convert to float32
-            audio_data = audio_data.astype(np.float32)
-            
+                audio_data = audio_data.mean(axis=1, dtype=np.float32)
+            else:
+                audio_data = audio_data.astype(np.float32, copy=False)
+
+            target_sr = 16000
+            if sample_rate != target_sr:
+                audio_data = soxr.resample(audio_data.astype(np.float32, copy=False), sample_rate, target_sr).astype(np.float32, copy=False)
+            else:
+                audio_data = audio_data.astype(np.float32, copy=False)
             # Enhanced audio preprocessing for low-quality audio
             audio_data = self._enhance_audio(audio_data)
             
@@ -80,16 +85,19 @@ class WhisperService:
         except Exception as e:
             print(f"Whisper transcription error: {e}")
             return "", 0.0
-    
+
     def _enhance_audio(self, audio_data: np.ndarray) -> np.ndarray:
         """
         Enhance audio quality for better transcription
         """
-        # Remove DC offset
-        audio_data = audio_data - np.mean(audio_data)
+        # Ensure float32
+        audio_data = audio_data.astype(np.float32, copy=False)
+
+        # Remove DC offset (float32 path)
+        audio_data = audio_data - np.mean(audio_data, dtype=np.float32)
         
         # Calculate RMS level
-        rms = np.sqrt(np.mean(audio_data**2))
+        rms = np.sqrt(np.mean((audio_data**2), dtype=np.float32))
         
         # If audio is too quiet, boost it
         if rms < 0.05:
@@ -103,7 +111,7 @@ class WhisperService:
         if max_val > 0:
             audio_data = audio_data / max_val * 0.95  # Leave 5% headroom
         
-        return audio_data
+        return audio_data.astype(np.float32, copy=False)
     
     def _calculate_confidence(self, segments: list) -> float:
         """Calculate average confidence from Whisper segments"""
