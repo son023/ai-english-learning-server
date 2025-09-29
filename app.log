@@ -784,3 +784,100 @@ RuntimeError: espeak not installed on your system
 2025-09-23 01:44:37,866 - api_logger - INFO - [35879436] Đã phiên âm từng từ cho câu gốc.
 2025-09-23 01:44:39,271 - api_logger - INFO - [35879436] Đã phiên âm từng từ cho câu của người học.
 2025-09-23 01:44:39,271 - api_logger - INFO - [35879436] Xử lý yêu cầu thành công.
+2025-09-30 04:12:12,555 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:12:12,555 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:12:23,075 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:12:23,075 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:13:03,052 - api_logger - INFO - [6b719427] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:13:04,822 - api_logger - INFO - [6b719427] Whisper transcribe xong trong 1769.7 ms
+2025-09-30 04:13:05,314 - api_logger - ERROR - [6b719427] Đã xảy ra lỗi không mong muốn.
+Traceback (most recent call last):
+  File "C:\Users\Admin\Desktop\ai-english-learning-server\services\pronunciation_service.py", line 132, in process_phonetic_evaluation
+    scores, phoneme_errors, wer_score, word_accuracy = self.evaluate_pronunciation_phonemes_aligned(
+                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        reference_phonemes=reference_phonemes_list,
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        learner_phonemes=learner_phonemes_list
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Admin\Desktop\ai-english-learning-server\services\pronunciation_service.py", line 52, in evaluate_pronunciation_phonemes_aligned
+    mapped_words, mapped_indices = get_best_mapped_words_dtw(est_words, ref_words)
+                                   ~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Admin\Desktop\ai-english-learning-server\services\word_matching.py", line 80, in get_best_mapped_words_dtw
+    word_distance_matrix = get_word_distance_matrix(
+        words_estimated, words_real)
+  File "C:\Users\Admin\Desktop\ai-english-learning-server\services\word_matching.py", line 21, in get_word_distance_matrix
+    word_distance_matrix[idx_estimated, idx_real] = WordMetrics.edit_distance_python(
+                                                    ^^^^^^^^^^^
+NameError: name 'WordMetrics' is not defined. Did you mean: 'word_metrics'?
+2025-09-30 04:14:06,296 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:14:06,296 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:14:37,819 - api_logger - INFO - [e6747d8c] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:14:39,258 - api_logger - INFO - [e6747d8c] Whisper transcribe xong trong 1439.1 ms
+2025-09-30 04:14:46,010 - api_logger - INFO - [e6747d8c] Đánh giá phát âm xong trong 6352.3 ms
+2025-09-30 04:14:46,010 - api_logger - INFO - [e6747d8c] Xử lý yêu cầu thành công.
+2025-09-30 04:15:00,648 - api_logger - INFO - [4504c25c] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:15:02,192 - api_logger - INFO - [4504c25c] Whisper transcribe xong trong 1543.8 ms
+2025-09-30 04:15:02,655 - api_logger - INFO - [4504c25c] Đánh giá phát âm xong trong 2.2 ms
+2025-09-30 04:15:02,655 - api_logger - INFO - [4504c25c] Xử lý yêu cầu thành công.
+2025-09-30 04:15:26,001 - api_logger - INFO - [f41b4460] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:15:27,672 - api_logger - INFO - [f41b4460] Whisper transcribe xong trong 1670.4 ms
+2025-09-30 04:15:28,126 - api_logger - INFO - [f41b4460] Đánh giá phát âm xong trong 1.6 ms
+2025-09-30 04:15:28,126 - api_logger - INFO - [f41b4460] Xử lý yêu cầu thành công.
+2025-09-30 04:15:42,320 - api_logger - INFO - [035ae7e8] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:15:44,047 - api_logger - INFO - [035ae7e8] Whisper transcribe xong trong 1727.2 ms
+2025-09-30 04:15:44,514 - api_logger - INFO - [035ae7e8] Đánh giá phát âm xong trong 2.3 ms
+2025-09-30 04:15:44,514 - api_logger - INFO - [035ae7e8] Xử lý yêu cầu thành công.
+2025-09-30 04:15:52,802 - api_logger - INFO - [fffa06bd] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:15:54,283 - api_logger - INFO - [fffa06bd] Whisper transcribe xong trong 1480.3 ms
+2025-09-30 04:15:54,774 - api_logger - INFO - [fffa06bd] Đánh giá phát âm xong trong 1.8 ms
+2025-09-30 04:15:54,774 - api_logger - INFO - [fffa06bd] Xử lý yêu cầu thành công.
+2025-09-30 04:16:08,287 - api_logger - INFO - [4bc31763] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:16:09,803 - api_logger - INFO - [4bc31763] Whisper transcribe xong trong 1516.4 ms
+2025-09-30 04:16:10,279 - api_logger - INFO - [4bc31763] Đánh giá phát âm xong trong 1.2 ms
+2025-09-30 04:16:10,280 - api_logger - INFO - [4bc31763] Xử lý yêu cầu thành công.
+2025-09-30 04:16:37,733 - api_logger - INFO - [6989835f] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:16:39,229 - api_logger - INFO - [6989835f] Whisper transcribe xong trong 1496.3 ms
+2025-09-30 04:16:39,677 - api_logger - INFO - [6989835f] Đánh giá phát âm xong trong 1.7 ms
+2025-09-30 04:16:39,677 - api_logger - INFO - [6989835f] Xử lý yêu cầu thành công.
+2025-09-30 04:17:14,215 - api_logger - INFO - [4c87e736] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:17:15,630 - api_logger - INFO - [4c87e736] Whisper transcribe xong trong 1415.0 ms
+2025-09-30 04:17:16,095 - api_logger - INFO - [4c87e736] Đánh giá phát âm xong trong 1.6 ms
+2025-09-30 04:17:16,095 - api_logger - INFO - [4c87e736] Xử lý yêu cầu thành công.
+2025-09-30 04:19:05,822 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:19:05,822 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:19:12,408 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:19:12,408 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:19:19,076 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:19:19,076 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:19:45,283 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:19:45,283 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:23:33,008 - api_logger - INFO - [e4c798c4] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:23:34,359 - api_logger - INFO - [e4c798c4] Whisper transcribe xong trong 1350.8 ms
+2025-09-30 04:23:41,107 - api_logger - INFO - [e4c798c4] Đánh giá phát âm xong trong 6319.7 ms
+2025-09-30 04:23:41,107 - api_logger - INFO - [e4c798c4] Xử lý yêu cầu thành công.
+2025-09-30 04:32:49,680 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:32:49,680 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:32:56,136 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:32:56,136 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:33:02,789 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:33:02,789 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:33:10,401 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:33:10,401 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:34:10,201 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:34:10,201 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:34:54,232 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:34:54,232 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:35:05,956 - api_logger - INFO - [3f91a99f] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:35:07,280 - api_logger - INFO - [3f91a99f] Whisper transcribe xong trong 1323.2 ms
+2025-09-30 04:35:14,029 - api_logger - INFO - [3f91a99f] Đánh giá phát âm xong trong 6327.8 ms
+2025-09-30 04:35:14,029 - api_logger - INFO - [3f91a99f] Xử lý yêu cầu thành công.
+2025-09-30 04:40:36,929 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:40:36,929 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-09-30 04:40:50,684 - api_logger - INFO - [523f4474] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-09-30 04:40:52,592 - api_logger - INFO - [523f4474] Whisper transcribe xong trong 1908.3 ms
+2025-09-30 04:41:00,712 - api_logger - INFO - [523f4474] Đánh giá phát âm xong trong 7609.6 ms
+2025-09-30 04:41:00,712 - api_logger - INFO - [523f4474] Xử lý yêu cầu thành công.
+2025-09-30 04:42:47,890 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-09-30 04:42:47,891 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll

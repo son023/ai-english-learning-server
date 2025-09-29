@@ -65,7 +65,6 @@ class PronunciationService:
             phon_est = ""
             if i < len(mapped_indices) and mapped_indices[i] >= 0:
                 phon_est = learner_phonemes[mapped_indices[i]].phoneme.replace(" ", "")
-
             # Tính edit distance
             dist = wm_edit_distance(ref_seq, phon_est)
             total_mismatches += dist
@@ -89,7 +88,7 @@ class PronunciationService:
         # 5. Điểm tổng thể
         overall = round((total_phonemes - total_mismatches) / total_phonemes * 100, 1) if total_phonemes else 0.0
         scores = PronunciationScore(pronunciation=overall, fluency=0.0, intonation=0.0, stress=0.0, overall=overall)
-
+        
         return scores, phoneme_errors, wer_score, word_accuracy
     
     def process_phonetic_evaluation(self, request, whisper_service, llm_service):
