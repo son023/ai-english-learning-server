@@ -27,87 +27,37 @@ def get_word_distance_matrix(words_estimated: list, words_real: list) -> np.ndar
                                  idx_real] = len(words_real[idx_real])
     return word_distance_matrix
 
-def get_resulting_string(mapped_indices: np.ndarray, words_estimated: list, words_real: list) -> Tuple[List,List]:
-    mapped_words = []
-    mapped_words_indices = []
-    WORD_NOT_FOUND_TOKEN = '-'
-    number_of_real_words = len(words_real)
-    for word_idx in range(number_of_real_words):
-        position_of_real_word_indices = np.where(
-            mapped_indices == word_idx)[0].astype(int)
-
-        if len(position_of_real_word_indices) == 0:
-            mapped_words.append(WORD_NOT_FOUND_TOKEN)
-            mapped_words_indices.append(-1)
-            continue
-
-        if len(position_of_real_word_indices) == 1:
-            idx0 = int(position_of_real_word_indices[0])
-            # Guard against indices pointing to the blank row or out of range
-            if idx0 < 0 or idx0 >= len(words_estimated):
-                mapped_words.append(WORD_NOT_FOUND_TOKEN)
-                mapped_words_indices.append(-1)
-            else:
-                mapped_words.append(words_estimated[idx0])
-                mapped_words_indices.append(idx0)
-            continue
-        # Check which index gives the lowest error
-        if len(position_of_real_word_indices) > 1:
-            error = 99999
-            best_possible_combination = ''
-            best_possible_idx = -1
-            for single_word_idx in position_of_real_word_indices:
-                idx_above_word = single_word_idx >= len(words_estimated)
-                if idx_above_word:
-                    continue
-                error_word = word_metrics.edit_distance_python(
-                    words_estimated[single_word_idx], words_real[word_idx])
-                if error_word < error:
-                    error = error_word*1
-                    best_possible_combination = words_estimated[single_word_idx]
-                    best_possible_idx = single_word_idx
-
-            mapped_words.append(best_possible_combination)
-            mapped_words_indices.append(best_possible_idx)
-            continue
-
+def get_best_mapped_words_dtw(words_estimated: list, words_real: list): 
+    word_distance_matrix = get_word_distance_matrix(words_estimated, words_real) 
+    dtw_result = dtw_from_distance_matrix(word_distance_matrix) 
+    real_indices = dtw_result.path[:-1, 1] 
+    estimated_indices = dtw_result.path[:-1, 0] 
+    mapped_words = ['-'] * len(words_real) 
+    mapped_words_indices = [-1] * len(words_real) 
+    # Track các est_idx đã được gán để tránh assign nhiều lần 
+    est_idx_assigned = set() # Gom nhóm theo real_idx 
+    real_to_est_map = {} 
+    for real_idx, est_idx in zip(real_indices, estimated_indices): 
+        if est_idx < len(words_estimated): 
+            real_to_est_map.setdefault(real_idx, []).append(est_idx) 
+    for real_idx in range(len(words_real)): 
+        if real_idx in real_to_est_map: 
+            candidates = real_to_est_map[real_idx] # Loại bỏ duplicate trong candidates 
+            unique_candidates = list(set(candidates)) # Trong trường hợp chỉ còn 1 candidate không bị assign 
+            available_candidates = [c for c in unique_candidates if c not in est_idx_assigned] 
+            if len(available_candidates) == 0: # Không còn candidate nào chưa assign, giữ '-' 
+                continue 
+            if len(available_candidates) == 1: 
+                best_est_idx = available_candidates[0] 
+            else: 
+                best_error = float('inf') 
+                best_est_idx = available_candidates[0] 
+                for est_idx in available_candidates: 
+                    error = word_metrics.edit_distance_python(words_estimated[est_idx].lower(), words_real[real_idx].lower()) 
+                    if error < best_error: 
+                        best_error = error 
+                        best_est_idx = est_idx 
+            mapped_words[real_idx] = words_estimated[best_est_idx] 
+            mapped_words_indices[real_idx] = best_est_idx 
+            est_idx_assigned.add(best_est_idx) 
     return mapped_words, mapped_words_indices
-
-# Faster, but not optimal
-def get_best_mapped_words_dtw(words_estimated: list, words_real: list) -> list:
-
-    from dtwalign import dtw_from_distance_matrix
-    word_distance_matrix = get_word_distance_matrix(
-        words_estimated, words_real)
-    mapped_indices = dtw_from_distance_matrix(
-        word_distance_matrix).path[:-1, 0]
-
-    mapped_words, mapped_words_indices = get_resulting_string(
-        mapped_indices, words_estimated, words_real)
-    return mapped_words, mapped_words_indices
-
-
-def getWhichLettersWereTranscribedCorrectly(real_word, transcribed_word):
-    is_leter_correct = [None]*len(real_word)    
-    for idx, letter in enumerate(real_word):   
-        letter = letter.lower()    
-        transcribed_word[idx] = transcribed_word[idx].lower() 
-        if letter == transcribed_word[idx] or letter in punctuation:
-            is_leter_correct[idx] = 1
-        else:
-            is_leter_correct[idx] = 0
-    return is_leter_correct
-
-
-def parseLetterErrorsToHTML(word_real, is_leter_correct):
-    word_colored = ''
-    correct_color_start = '*'
-    correct_color_end = '*'
-    wrong_color_start = '-'
-    wrong_color_end = '-'
-    for idx, letter in enumerate(word_real):
-        if is_leter_correct[idx] == 1:
-            word_colored += correct_color_start + letter+correct_color_end
-        else:
-            word_colored += wrong_color_start + letter+wrong_color_end
-    return word_colored
