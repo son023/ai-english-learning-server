@@ -154,74 +154,7 @@ const PronunciationPractice = () => {
   };
 
   const renderColoredPracticeTextWithPhonemes = () => {
-    // Align phonemes and render labeled comparisons inside the results panel
-    function alignSequences(refSeq, learnerSeq) {
-      const m = refSeq.length;
-      const n = learnerSeq.length;
-      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-      const back = Array.from({ length: m + 1 }, () => Array(n + 1).fill(null));
-
-      const matchScore = 2;
-      const mismatchPenalty = -1;
-      const gapPenalty = -1;
-
-      for (let i = 0; i <= m; i++) {
-        dp[i][0] = i * gapPenalty;
-        back[i][0] = "up";
-      }
-      for (let j = 0; j <= n; j++) {
-        dp[0][j] = j * gapPenalty;
-        back[0][j] = "left";
-      }
-      back[0][0] = null;
-
-      for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-          const match =
-            dp[i - 1][j - 1] +
-            (refSeq[i - 1] === learnerSeq[j - 1]
-              ? matchScore
-              : mismatchPenalty);
-          const del = dp[i - 1][j] + gapPenalty;
-          const ins = dp[i][j - 1] + gapPenalty;
-          const best = Math.max(match, del, ins);
-          dp[i][j] = best;
-          if (best === del) back[i][j] = "up";
-          else if (best === ins) back[i][j] = "left";
-          else back[i][j] = "diag";
-        }
-      }
-
-      let i = m,
-        j = n;
-      const aligned = [];
-      while (i > 0 || j > 0) {
-        const dir = back[i][j];
-        if (dir === "diag") {
-          aligned.push({ ref: refSeq[i - 1], learner: learnerSeq[j - 1] });
-          i--;
-          j--;
-        } else if (dir === "up") {
-          aligned.push({ ref: refSeq[i - 1], learner: null });
-          i--;
-        } else if (dir === "left") {
-          aligned.push({ ref: null, learner: learnerSeq[j - 1] });
-          j--;
-        }
-      }
-      return aligned.reverse();
-    }
-
-    if (!results) return null;
-
-    const refPhonemes = (results.reference_phonemes || [])
-      .map((p) => (p.phoneme || "").trim())
-      .filter(Boolean);
-    const learnerPhonemes = (results.learner_phonemes || [])
-      .map((p) => (p.phoneme || "").trim())
-      .filter(Boolean);
-
-    const alignment = alignSequences(refPhonemes, learnerPhonemes);
+    const alignment = results.phoneme_alignment || [];
 
     function buildColoredSentence(targetText, advanceOn) {
       const words = (targetText || "").split(/\s+/);
@@ -252,7 +185,7 @@ const PronunciationPractice = () => {
               {word}
             </span>
           );
-        } else if (refSym === learnerSym) {
+        } else if (pair.is_match) {
           wordSpans.push(
             <span
               key={`word-${advanceOn}-${wordIndex}`}
@@ -262,11 +195,11 @@ const PronunciationPractice = () => {
             </span>
           );
         } else {
-          const refChars = [...(refSym || "")];
-          const learnerChars = [...(learnerSym || "")];
-          const subAlignment = alignSequences(refChars, learnerChars);
+          const subAlignment = pair.sub_alignment || [];
           const charCount =
-            (advanceOn === "ref" ? refChars.length : learnerChars.length) || 1;
+            (advanceOn === "ref"
+              ? (refSym || "").length
+              : (learnerSym || "").length) || 1;
           let subIdxCount = 0;
 
           subAlignment.forEach((subPair, subIdx) => {
@@ -275,10 +208,7 @@ const PronunciationPractice = () => {
                 ? subPair.ref !== null
                 : subPair.learner !== null;
             if (!consider) return;
-            const isCorrect =
-              subPair.ref !== null &&
-              subPair.learner !== null &&
-              subPair.ref === subPair.learner;
+            const isCorrect = !!subPair.is_match;
             const colorClass = isCorrect
               ? `text-green-600 ${emphasisClass}`
               : `text-red-600 ${emphasisClass}`;
