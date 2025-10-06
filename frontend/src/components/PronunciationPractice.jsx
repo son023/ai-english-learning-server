@@ -1,8 +1,9 @@
 import React, { useState, useRef } from "react";
-import { Mic, MicOff, Send, RotateCcw, Volume2, Play, X } from "lucide-react";
+import { Mic, MicOff, Send, RotateCcw, Volume2, Play, X, Map } from "lucide-react";
 import axios from "axios";
+import HeaderNav from "./HeaderNav";
 
-const PronunciationPractice = () => {
+const PronunciationPractice = ({ page, setPage }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -383,15 +384,7 @@ const PronunciationPractice = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* SEO-friendly header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            AI English Pronunciation Practice
-          </h1>
-          <p className="text-gray-600 mt-1">Luyện tập phát âm tiếng Anh với AI thông minh</p>
-        </div>
-      </header>
+      <HeaderNav title="AI English Pronunciation Practice" page={page} setPage={setPage} />
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 gap-6 h-[calc(100vh-140px)]">

@@ -4,6 +4,8 @@ import logging
 import platform
 from logging.handlers import RotatingFileHandler
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from services.sentences_service import SentencesService
 from fastapi.middleware.cors import CORSMiddleware
 
 from phonemizer.backend.espeak.wrapper import EspeakWrapper
@@ -58,6 +60,7 @@ app.add_middleware(
 whisper_service = WhisperService(model_size="small")
 pronunciation_service = PronunciationService()
 llm_service = LLMService()
+sentences_service = SentencesService(csv_path=os.path.join(os.path.dirname(__file__), "docs", "sentences.csv"))
 
 @app.get("/")
 async def root():
@@ -69,6 +72,14 @@ async def root():
 )
 async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
     return pronunciation_service.process_phonetic_evaluation(request, whisper_service, llm_service)
+
+
+@app.get("/sentences")
+async def get_sentences():
+    rows = sentences_service.load_sentences()
+    if not rows:
+        raise HTTPException(status_code=404, detail="sentences.csv not found or empty")
+    return JSONResponse(content=rows)
 
 if __name__ == "__main__":
     try:
