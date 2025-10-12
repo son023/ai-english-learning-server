@@ -4,8 +4,10 @@ import io
 import numpy as np
 import soundfile as sf
 from pydub import AudioSegment
-from typing import Tuple
+from typing import Tuple, List, Dict, Any
 import soxr
+
+from models import WordTimestamp
 
 class WhisperService:
     """
@@ -89,20 +91,43 @@ class WhisperService:
                 temperature=0.0,  # Deterministic output
                 compression_ratio_threshold=2.4,  # More lenient compression
                 logprob_threshold=-1.0,  # More lenient probability threshold
-                no_speech_threshold=0.6  # Lower threshold for detecting speech
+                no_speech_threshold=0.6,  # Lower threshold for detecting speech
+                word_timestamps=True  # Get word-level timestamps and probabilities
             )
             
             # Extract text and confidence
             transcribed_text = result["text"].strip()
-            
-            # Calculate average confidence from segments
             confidence = self._calculate_confidence(result.get("segments", []))
             
-            return transcribed_text, confidence
+            # Calculate average confidence from segments
+            word_timestamps = self._extract_word_timestamps(result)
+            
+            return transcribed_text, confidence, word_timestamps
             
         except Exception as e:
             print(f"Whisper transcription error: {e}")
-            return "", 0.0
+            return "", 0.0, []
+
+    def _extract_word_timestamps(self, result: Dict[str, Any]) -> List[WordTimestamp]:
+        """Trích xuất word timestamps từ kết quả của Whisper."""
+        timestamps = []
+        if "segments" not in result:
+            return timestamps
+        
+        for segment in result["segments"]:
+            if "words" in segment:
+                for word_info in segment["words"]:
+                    # Đảm bảo 'word', 'start', 'end' tồn tại
+                    if all(k in word_info for k in ['word', 'start', 'end']):
+                        timestamps.append(
+                            WordTimestamp(
+                                word=word_info['word'].strip(),
+                                start=round(float(word_info['start']), 2),
+                                end=round(float(word_info['end']), 2)
+                            )
+                        )
+        return timestamps
+
 
     def _enhance_audio(self, audio_data: np.ndarray) -> np.ndarray:
         """

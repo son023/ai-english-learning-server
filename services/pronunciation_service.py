@@ -12,10 +12,15 @@ import os
 from jiwer import wer
 from .word_matching import get_best_mapped_words_dtw
 from .word_metrics import edit_distance_python as wm_edit_distance   
-from models import PhonemeData, PronunciationScore, WordAccuracyData
+from models import PhonemeData, PronunciationScore, WordAccuracyData, WordTimestamp
+from models import PhoneticPronunciationResponse
+
+# Các hằng số để điều chỉnh việc tính điểm fluency
+MAX_ALLOWED_PAUSE_SECONDS = 1.5  # Khoảng nghỉ tối đa cho phép (giây)
+PENALTY_PER_LONG_PAUSE = 5       # Điểm bị trừ cho mỗi lần nghỉ quá dài
 
 class PronunciationService:
-   
+    
     def warmup(self) -> None:
         """Warm up phonemizer and DTW path to avoid cold-start latency."""
         try:
@@ -34,6 +39,36 @@ class PronunciationService:
             _ = get_best_mapped_words_dtw(["a"], ["a"])  
         except Exception:
             pass
+
+
+    def _calculate_fluency_with_penalty(
+            self,
+            word_timestamps: List[WordTimestamp],
+            base_fluency_score: float = 95.0 # Giả sử điểm fluency khởi điểm là 95
+    ) -> float:
+        """
+        Tính điểm trôi chảy dựa trên khoảng nghỉ giữa các từ.
+        Bắt đầu với điểm cơ bản và trừ điểm cho những khoảng dừng dài.
+        """
+        if len(word_timestamps) < 2:
+            return base_fluency_score # Không có khoảng nghỉ để phân tích
+
+        long_pauses_count = 0
+        for i in range(len(word_timestamps) - 1):
+            current_word = word_timestamps[i]
+            next_word = word_timestamps[i+1]
+            
+            pause_duration = next_word.start - current_word.end
+            
+            if pause_duration > MAX_ALLOWED_PAUSE_SECONDS:
+                long_pauses_count += 1
+        
+        # Tính toán điểm phạt
+        total_penalty = long_pauses_count * PENALTY_PER_LONG_PAUSE
+        
+        final_fluency_score = max(0, base_fluency_score - total_penalty)
+        
+        return round(final_fluency_score, 1)
 
     def calculate_wer(self, reference: str, hypothesis: str) -> float:
         """Tính toán Word Error Rate (trong trường hợp này là Phoneme Error Rate)."""
@@ -98,13 +133,22 @@ class PronunciationService:
 
         try:
             t0 = time.perf_counter()
-            transcribed_text, confidence = whisper_service.transcribe_audio_base64(request.audio_base64)
+            transcribed_text, confidence, word_timestamps = whisper_service.transcribe_audio_base64(request.audio_base64)
             t1 = time.perf_counter()
             logger.info(f"[{request_id}] Whisper transcribe xong trong {(t1 - t0)*1000:.1f} ms")
-            if transcribed_text is None:
-                raise HTTPException(status_code=500, detail="Could not transcribe audio.")
+            if not transcribed_text:
+                empty_scores = PronunciationScore(pronunciation=0.0, fluency=0.0, intonation=0.0, stress=0.0, overall=0.0)
+                return PhoneticPronunciationResponse(
+                    original_sentence=request.sentence, transcribed_text="<no speech detected>",
+                    reference_phonemes=[], learner_phonemes=[], word_accuracy=[],
+                    scores=empty_scores, phoneme_errors=[],
+                    feedback="We could not detect any speech in your audio. Please try again.",
+                    wer_score=1.0, confidence=0.0, word_timestamps=[]
+                )
 
-            original_words = request.sentence.split()
+            translator = str.maketrans('', '', string.punctuation)
+            cleaned_sentence = request.sentence.lower().translate(translator)
+            original_words = cleaned_sentence.split()
             sep = Separator(phone=' ', syllable='', word='|')
             ref_phonemes_batched = phonemize(
                 original_words,
@@ -135,6 +179,14 @@ class PronunciationService:
             t1 = time.perf_counter()
             logger.info(f"[{request_id}] Đánh giá phát âm xong trong {(t1 - t0)*1000:.1f} ms")
 
+            # Tính toán lại điểm fluency dựa trên timestamps
+            fluency_score = self._calculate_fluency_with_penalty(word_timestamps)
+            scores.fluency = fluency_score
+            
+            # Tính lại điểm overall (ví dụ: trung bình của pronunciation và fluency)
+            # Bạn có thể dùng trọng số khác nếu muốn
+            scores.overall = round((scores.pronunciation + scores.fluency) / 2, 1)
+
             feedback = "Default feedback."
             try:
                 word_errors_for_llm = [{
@@ -154,12 +206,35 @@ class PronunciationService:
                 feedback = "Could not generate AI feedback at this time."
 
             logger.info(f"[{request_id}] Xử lý yêu cầu thành công.")
-            from models import PhoneticPronunciationResponse
+            
+            # === BẮT ĐẦU THÊM CODE DEBUG ===
+            print("\n--- DEBUG BACKEND DATA ---")
+            print(f"Số lượng từ trong word_accuracy: {len(word_accuracy)}")
+            print(f"Số lượng từ trong reference_phonemes: {len(reference_phonemes_list)}")
+            
+            print("\n[Word Accuracy - Dữ liệu]:")
+            for item in word_accuracy:
+                print(f"  - Word: '{item.word}', Accuracy: {item.accuracy_percentage}")
+
+            print("\n[Reference Phonemes - Dữ liệu]:")
+            for item in reference_phonemes_list:
+                print(f"  - Word: '{item.word}', Phoneme: '{item.phoneme}'")
+            
+            print("--- KẾT THÚC DEBUG BACKEND ---\n")
+            # === KẾT THÚC THÊM CODE DEBUG ===
+
             return PhoneticPronunciationResponse(
-                original_sentence=request.sentence, transcribed_text=transcribed_text,
-                reference_phonemes=reference_phonemes_list, learner_phonemes=learner_phonemes_list,
-                word_accuracy=word_accuracy, scores=scores, phoneme_errors=phoneme_errors,
-                feedback=feedback, wer_score=wer_score, confidence=confidence
+                original_sentence=request.sentence,
+                transcribed_text=transcribed_text,
+                reference_phonemes=reference_phonemes_list,
+                learner_phonemes=learner_phonemes_list,
+                word_accuracy=word_accuracy,
+                scores=scores,
+                phoneme_errors=phoneme_errors,
+                feedback=feedback,
+                wer_score=wer_score,
+                confidence=confidence,
+                word_timestamps=word_timestamps  # <-- THÊM DÒNG NÀY VÀO
             )
 
         except HTTPException:

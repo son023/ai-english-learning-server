@@ -1,6 +1,40 @@
-import React, { useState, useRef } from "react";
-import { Mic, MicOff, Send, RotateCcw, Volume2, Play, X } from "lucide-react";
+// src/components/PronunciationPractice.jsx
+
+import React, { useState, useRef, useEffect } from "react"; // LỖI ĐÃ ĐƯỢC SỬA Ở ĐÂY
+import {
+  Mic,
+  MicOff,
+  Send,
+  RotateCcw,
+  Volume2,
+  Play,
+  X,
+  History,
+} from "lucide-react";
 import axios from "axios";
+
+// Helper functions for LocalStorage
+const HISTORY_KEY = "pronunciationHistory";
+
+const getHistory = () => {
+  try {
+    const historyJson = localStorage.getItem(HISTORY_KEY);
+    return historyJson ? JSON.parse(historyJson) : [];
+  } catch (error) {
+    console.error("Could not get history from LocalStorage", error);
+    return [];
+  }
+};
+
+const saveToHistory = (newItem) => {
+  try {
+    const history = getHistory();
+    const updatedHistory = [newItem, ...history].slice(0, 20); // Keep last 20 items
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(updatedHistory));
+  } catch (error) {
+    console.error("Could not save to history in LocalStorage", error);
+  }
+};
 
 const PronunciationPractice = () => {
   const [isRecording, setIsRecording] = useState(false);
@@ -12,52 +46,46 @@ const PronunciationPractice = () => {
   );
   const [showResultsModal, setShowResultsModal] = useState(false);
 
+  // New states for new features
+  const [activePhoneme, setActivePhoneme] = useState({ word: "", phoneme: "" });
+  const [history, setHistory] = useState([]);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const audioUrlRef = useRef(null);
 
+  // Load history from localStorage when component mounts
+  useEffect(() => {
+    setHistory(getHistory());
+  }, []);
+
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      // Thử dùng WAV nếu supported, nếu không thì dùng format default
       let options = { mimeType: "audio/webm;codecs=opus" };
-      if (MediaRecorder.isTypeSupported("audio/wav")) {
+      if (MediaRecorder.isTypeSupported("audio/wav"))
         options = { mimeType: "audio/wav" };
-      } else if (MediaRecorder.isTypeSupported("audio/webm")) {
+      else if (MediaRecorder.isTypeSupported("audio/webm"))
         options = { mimeType: "audio/webm" };
-      } else if (MediaRecorder.isTypeSupported("audio/mp4")) {
+      else if (MediaRecorder.isTypeSupported("audio/mp4"))
         options = { mimeType: "audio/mp4" };
-      }
 
       const mediaRecorder = new MediaRecorder(stream, options);
-      console.log("Recording with format:", mediaRecorder.mimeType);
-
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
-
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, {
           type: mediaRecorder.mimeType,
         });
-        console.log("Audio blob created:", audioBlob.type, audioBlob.size);
         setAudioBlob(audioBlob);
-
-        // Tạo URL cho audio playback
-        if (audioUrlRef.current) {
-          URL.revokeObjectURL(audioUrlRef.current);
-        }
+        if (audioUrlRef.current) URL.revokeObjectURL(audioUrlRef.current);
         audioUrlRef.current = URL.createObjectURL(audioBlob);
-
         stream.getTracks().forEach((track) => track.stop());
       };
-
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
@@ -90,11 +118,9 @@ const PronunciationPractice = () => {
       alert("Vui lòng ghi âm trước khi gửi!");
       return;
     }
-
     setIsLoading(true);
     try {
       const base64Audio = await convertToBase64(audioBlob);
-
       const response = await axios.post(
         "http://localhost:8000/evaluate-pronunciation-phonetic",
         {
@@ -102,9 +128,18 @@ const PronunciationPractice = () => {
           sentence: practiceText,
         }
       );
-
       setResults(response.data);
       setShowResultsModal(true);
+
+      const newItem = {
+        id: Date.now(),
+        sentence: practiceText,
+        date: new Date().toISOString(),
+        audioBase64: `data:${audioBlob.type};base64,${base64Audio}`,
+        results: response.data,
+      };
+      saveToHistory(newItem);
+      setHistory(getHistory());
     } catch (error) {
       console.error("Error submitting audio:", error);
       alert("Có lỗi xảy ra khi gửi âm thanh. Vui lòng thử lại.");
@@ -117,8 +152,7 @@ const PronunciationPractice = () => {
     setAudioBlob(null);
     setResults(null);
     setIsRecording(false);
-
-    // Dọn dẹp audio URL
+    setActivePhoneme({ word: "", phoneme: "" });
     if (audioUrlRef.current) {
       URL.revokeObjectURL(audioUrlRef.current);
       audioUrlRef.current = null;
@@ -130,6 +164,18 @@ const PronunciationPractice = () => {
       const audio = new Audio(audioUrlRef.current);
       audio.play().catch((e) => console.error("Error playing audio:", e));
     }
+  };
+
+  const handleWordClick = (word, phoneme) => {
+    if ("speechSynthesis" in window && word && word.trim() !== "") {
+      const utterance = new SpeechSynthesisUtterance(
+        word.replace(/[.,!?]/g, "")
+      );
+      utterance.lang = "en-US";
+      utterance.rate = 0.8;
+      speechSynthesis.speak(utterance);
+    }
+    setActivePhoneme({ word, phoneme });
   };
 
   const getScoreColor = (score) => {
@@ -156,318 +202,157 @@ const PronunciationPractice = () => {
   };
 
   const renderColoredPracticeTextWithPhonemes = () => {
-    if (
-      !results?.reference_phonemes?.length &&
-      !results?.learner_phonemes?.length
-    ) {
+    if (!results?.word_accuracy?.length) {
+      const words = practiceText.split(/(\s+)/);
       return (
-        <>
-          <span>{practiceText}</span>
-          <br />
-          <span className="text-gray-500">
-            {results?.reference_phonemes?.map((w) => w.phoneme).join("") || ""}
-          </span>
-          <br />
-          <span className="text-gray-400">
-            {results?.learner_phonemes?.map((w) => w.phoneme).join("") || ""}
-          </span>
-        </>
+        <div>
+          <p className="text-lg text-gray-800 leading-relaxed font-medium">
+            {words.map((word, index) => {
+              if (word.trim() === "") return <span key={index}>{word}</span>;
+              return (
+                <span
+                  key={index}
+                  className="cursor-pointer hover:bg-blue-100 rounded px-1 transition-colors"
+                  onClick={() =>
+                    handleWordClick(word, "Chưa có dữ liệu phoneme")
+                  }>
+                  {word}
+                </span>
+              );
+            })}
+          </p>
+          {activePhoneme.word && (
+            <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg animate-fade-in">
+              <span className="font-bold text-indigo-800">
+                {activePhoneme.word}:{" "}
+              </span>
+              <span className="text-lg text-indigo-600 font-mono">
+                {activePhoneme.phoneme}
+              </span>
+            </div>
+          )}
+        </div>
       );
     }
-
-    // Hàm align sequences dùng Needleman-Wunsch alignment
-    function alignSequences(refSeq, learnerSeq) {
-      const m = refSeq.length;
-      const n = learnerSeq.length;
-      const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-      const back = Array.from({ length: m + 1 }, () => Array(n + 1).fill(null));
-
-      // scoring
-      const matchScore = 2;
-      const mismatchPenalty = -1;
-      const gapPenalty = -1;
-
-      // init DP
-      for (let i = 0; i <= m; i++) {
-        dp[i][0] = i * gapPenalty;
-        back[i][0] = "up";
-      }
-      for (let j = 0; j <= n; j++) {
-        dp[0][j] = j * gapPenalty;
-        back[0][j] = "left";
-      }
-      back[0][0] = null;
-
-      // fill DP
-      for (let i = 1; i <= m; i++) {
-        for (let j = 1; j <= n; j++) {
-          const match =
-            dp[i - 1][j - 1] +
-            (refSeq[i - 1] === learnerSeq[j - 1]
-              ? matchScore
-              : mismatchPenalty);
-          const del = dp[i - 1][j] + gapPenalty;
-          const ins = dp[i][j - 1] + gapPenalty;
-          const best = Math.max(match, del, ins);
-          dp[i][j] = best;
-          if (best === match) back[i][j] = "diag";
-          else if (best === del) back[i][j] = "up";
-          else back[i][j] = "left";
-        }
-      }
-
-      // traceback
-      let i = m,
-        j = n;
-      const aligned = [];
-      while (i > 0 || j > 0) {
-        const dir = back[i][j];
-        if (dir === "diag") {
-          aligned.push({
-            ref: refSeq[i - 1],
-            learner: learnerSeq[j - 1],
-          });
-          i--;
-          j--;
-        } else if (dir === "up") {
-          aligned.push({ ref: refSeq[i - 1], learner: null });
-          i--;
-        } else if (dir === "left") {
-          aligned.push({ ref: null, learner: learnerSeq[j - 1] });
-          j--;
-        }
-      }
-      return aligned.reverse(); // alignment từ trái qua phải
-    }
-
-    const refPhonemes = results.reference_phonemes
-      .map((p) => (p.phoneme || "").trim())
-      .filter(Boolean);
-
-    const learnerPhonemes = results.learner_phonemes
-      .map((p) => (p.phoneme || "").trim())
-      .filter(Boolean);
-
-    const alignment = alignSequences(refPhonemes, learnerPhonemes);
-
-    // Split practiceText into words, preserving punctuation and spaces
-    const words = practiceText.split(/\s+/);
-    let wordIndex = 0;
-    const coloredSegments = [];
-
-    alignment.forEach((pair) => {
-      if (pair.ref === null) return; // ignore insertions
-
-      const word = words[wordIndex];
-      let wordSpans = [];
-
-      if (pair.learner === null) {
-        // deletion: red whole word
-        wordSpans.push(
-          <span
-            key={`word-${wordIndex}`}
-            className="text-red-600 font-bold underline"
-          >
-            {word}
-          </span>
-        );
-      } else if (pair.ref === pair.learner) {
-        // exact match: green whole word
-        wordSpans.push(
-          <span
-            key={`word-${wordIndex}`}
-            className="text-green-600 font-bold underline"
-          >
-            {word}
-          </span>
-        );
-      } else {
-        // mismatch: sub-alignment on characters
-        const refChars = [...pair.ref];
-        const learnerChars = [...pair.learner];
-        const subAlignment = alignSequences(refChars, learnerChars);
-        const charCount = refChars.length;
-        let subRefIndex = 0;
-
-        subAlignment.forEach((subPair, subIdx) => {
-          if (subPair.ref === null) return; // ignore insertions
-
-          const isCorrect =
-            subPair.learner !== null && subPair.ref === subPair.learner;
-          const colorClass = isCorrect
-            ? "text-green-600 font-bold underline"
-            : "text-red-600 font-bold underline";
-
-          const start = Math.floor((subRefIndex * word.length) / charCount);
-          const end = Math.floor(((subRefIndex + 1) * word.length) / charCount);
-          const part = word.substring(start, end);
-
-          if (part) {
-            wordSpans.push(
-              <span key={`sub-${wordIndex}-${subIdx}`} className={colorClass}>
-                {part}
-              </span>
-            );
-          }
-          subRefIndex++;
-        });
-
-        // If there's remaining text due to rounding, append to last span
-        const lastEnd = Math.floor((charCount * word.length) / charCount);
-        if (lastEnd < word.length) {
-          const remaining = word.substring(lastEnd);
-          if (wordSpans.length > 0) {
-            const lastSpan = wordSpans[wordSpans.length - 1];
-            wordSpans[wordSpans.length - 1] = (
-              <span key={lastSpan.key} className={lastSpan.props.className}>
-                {lastSpan.props.children + remaining}
-              </span>
-            );
-          } else {
-            // unlikely, but fallback
-            wordSpans.push(
-              <span
-                key={`word-${wordIndex}-remain`}
-                className="text-red-600 font-bold underline"
-              >
-                {remaining}
-              </span>
-            );
-          }
-        }
-      }
-
-      coloredSegments.push(...wordSpans);
-      wordIndex++;
-      if (wordIndex < words.length) {
-        coloredSegments.push(" ");
-      }
-    });
-
-    const referencePhonemeLine = (
-      <div className="flex flex-wrap gap-x-1 text-base mt-1 text-gray-500">
-        {results.reference_phonemes.map((item, idx) => (
-          <span
-            key={"ref-phoneme-" + idx}
-            className="inline-block"
-            style={{ marginRight: 8 }}
-          >
-            {item.phoneme}
-          </span>
-        ))}
-      </div>
-    );
-
-    const learnerPhonemeLine = (
-      <div className="flex flex-wrap gap-x-1 text-base text-blue-600">
-        {(results.learner_phonemes || []).map((item, idx) => (
-          <span
-            key={"learner-phoneme-" + idx}
-            className="inline-block"
-            style={{ marginRight: 8 }}
-          >
-            {item.phoneme}
-          </span>
-        ))}
-      </div>
-    );
-
     return (
-      <>
-        {coloredSegments}
-        {referencePhonemeLine}
-        {learnerPhonemeLine}
-      </>
+      <div>
+        <p className="text-lg text-gray-800 leading-relaxed font-medium">
+          {results.word_accuracy.map((wordData, index) => {
+            const { word, accuracy_percentage } = wordData;
+
+            // SỬA LỖI: Lấy phoneme theo index, không dùng .find()
+            const phonemeData = results.reference_phonemes[index];
+
+            let colorClass = "text-gray-700";
+            if (accuracy_percentage >= 90)
+              colorClass = "text-green-600 font-medium";
+            else if (accuracy_percentage >= 75) colorClass = "text-blue-600";
+            else if (accuracy_percentage >= 60) colorClass = "text-yellow-600";
+            else colorClass = "text-red-600 font-semibold";
+            return (
+              <span
+                key={index}
+                className={`cursor-pointer hover:bg-blue-100 rounded px-1 transition-colors ${colorClass}`}
+                onClick={() =>
+                  handleWordClick(
+                    word,
+                    phonemeData?.phoneme || "Không tìm thấy"
+                  )
+                }>
+                {word}{" "}
+              </span>
+            );
+          })}
+        </p>
+        {activePhoneme.word && (
+          <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg animate-fade-in">
+            <span className="font-bold text-indigo-800">
+              {activePhoneme.word}:{" "}
+            </span>
+            <span className="text-lg text-indigo-600 font-mono">
+              {activePhoneme.phoneme}
+            </span>
+          </div>
+        )}
+      </div>
     );
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      {/* SEO-friendly header */}
       <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-            AI English Pronunciation Practice
-          </h1>
-          <p className="text-gray-600 mt-1">Luyện tập phát âm tiếng Anh với AI thông minh</p>
+        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              AI English Pronunciation Practice
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Luyện tập phát âm tiếng Anh với AI thông minh
+            </p>
+          </div>
+          <button
+            onClick={() => setShowHistoryModal(true)}
+            className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-4 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400"
+            aria-label="Xem lịch sử luyện tập">
+            <History size={20} />
+            Lịch sử
+          </button>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 gap-6 h-[calc(100vh-140px)]">
-          {/* LEFT COLUMN - Practice Section */}
           <section className="space-y-6 overflow-y-auto">
-            {/* Practice Text Card */}
             <article
               className="card p-6"
               role="region"
-              aria-labelledby="practice-heading"
-            >
+              aria-labelledby="practice-heading">
               <div className="flex items-center justify-between mb-4">
                 <h2
                   id="practice-heading"
-                  className="text-xl font-semibold text-gray-800"
-                >
+                  className="text-xl font-semibold text-gray-800">
                   Câu cần luyện tập
                 </h2>
                 <button
                   onClick={playTextToSpeech}
                   className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1"
-                  aria-label="Nghe phát âm mẫu"
-                >
+                  aria-label="Nghe phát âm mẫu">
                   <Volume2 size={20} />
                   <span className="text-sm">Nghe mẫu</span>
                 </button>
               </div>
-
               <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 mb-4 border border-gray-200">
-                <p className="text-lg text-gray-800 leading-relaxed font-medium">
-                  {renderColoredPracticeTextWithPhonemes()}
-                </p>
+                {renderColoredPracticeTextWithPhonemes()}
               </div>
-
               <label htmlFor="practice-input" className="sr-only">
                 Nhập câu luyện tập
               </label>
               <textarea
                 id="practice-input"
                 value={practiceText}
-                onChange={(e) => {
-                  setPracticeText(e.target.value);
-                  setResults((prev) => ({
-                    ...prev,
-                    reference_phonemes: [],
-                    learner_phonemes: [],
-                  }));
-                }}
+                onChange={(e) => setPracticeText(e.target.value)}
                 className="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all duration-200"
                 rows="4"
                 placeholder="Nhập câu bạn muốn luyện tập phát âm..."
               />
             </article>
 
-            {/* Recording Controls */}
             <article
               className="card p-6"
               role="region"
-              aria-labelledby="recording-heading"
-            >
+              aria-labelledby="recording-heading">
               <h2
                 id="recording-heading"
-                className="text-xl font-semibold text-gray-800 mb-6"
-              >
+                className="text-xl font-semibold text-gray-800 mb-6">
                 Ghi âm phát âm
               </h2>
-
               <div className="flex flex-col items-center space-y-4">
-                {/* Main recording button */}
                 <div className="flex justify-center">
                   {!isRecording ? (
                     <button
                       onClick={startRecording}
                       className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-green-300"
-                      aria-label="Bắt đầu ghi âm"
-                    >
+                      aria-label="Bắt đầu ghi âm">
                       <Mic size={24} />
                       Bắt đầu ghi âm
                     </button>
@@ -475,32 +360,26 @@ const PronunciationPractice = () => {
                     <button
                       onClick={stopRecording}
                       className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-pink-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all duration-200 animate-pulse-slow focus:outline-none focus:ring-4 focus:ring-red-300"
-                      aria-label="Dừng ghi âm"
-                    >
+                      aria-label="Dừng ghi âm">
                       <MicOff size={24} />
                       Dừng ghi âm
                     </button>
                   )}
                 </div>
-
-                {/* Action buttons */}
                 {audioBlob && (
                   <div className="flex flex-wrap justify-center gap-3">
                     <button
                       onClick={playRecordedAudio}
                       className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md hover:from-purple-600 hover:to-indigo-700 transform hover:scale-105 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-300"
-                      aria-label="Nghe lại audio vừa ghi"
-                    >
+                      aria-label="Nghe lại audio vừa ghi">
                       <Play size={18} />
                       Nghe lại
                     </button>
-
                     <button
                       onClick={submitAudio}
                       disabled={isLoading}
                       className="btn-primary flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                      aria-label="Gửi audio để đánh giá"
-                    >
+                      aria-label="Gửi audio để đánh giá">
                       {isLoading ? (
                         <>
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -513,19 +392,15 @@ const PronunciationPractice = () => {
                         </>
                       )}
                     </button>
-
                     <button
                       onClick={reset}
                       className="btn-secondary flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                      aria-label="Thử lại từ đầu"
-                    >
+                      aria-label="Thử lại từ đầu">
                       <RotateCcw size={18} />
                       Thử lại
                     </button>
                   </div>
                 )}
-
-                {/* Status indicator */}
                 {audioBlob && (
                   <div className="flex justify-center">
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
@@ -540,7 +415,6 @@ const PronunciationPractice = () => {
             </article>
           </section>
 
-          {/* RESULTS MODAL */}
           {showResultsModal && results && (
             <div
               className="fixed inset-0 z-50 flex items-center justify-center"
@@ -549,28 +423,28 @@ const PronunciationPractice = () => {
               aria-labelledby="results-heading"
               onClick={(e) => {
                 if (e.target === e.currentTarget) setShowResultsModal(false);
-              }}
-            >
+              }}>
               <div className="absolute inset-0 bg-black/50" />
               <div className="relative bg-white rounded-xl shadow-2xl w-[70vw] max-w-[70vw] max-h-[85vh] overflow-y-auto border">
                 <div className="sticky top-0 flex items-center justify-between p-4 border-b bg-white rounded-t-xl">
-                  <h2 id="results-heading" className="text-xl font-semibold text-gray-800">
+                  <h2
+                    id="results-heading"
+                    className="text-xl font-semibold text-gray-800">
                     Kết quả đánh giá
                   </h2>
                   <button
                     onClick={() => setShowResultsModal(false)}
                     className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
-                    aria-label="Đóng"
-                  >
+                    aria-label="Đóng">
                     <X size={20} />
                   </button>
                 </div>
-
                 <div className="p-6">
-                  {/* Overall Score */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-lg font-medium">Điểm tổng quát</span>
+                      <span className="text-lg font-medium">
+                        Điểm tổng quát
+                      </span>
                       <span className="text-3xl font-bold text-gray-800">
                         {results.scores?.overall?.toFixed(1) || 0}/100
                       </span>
@@ -584,15 +458,12 @@ const PronunciationPractice = () => {
                         role="progressbar"
                         aria-valuenow={results.scores?.overall || 0}
                         aria-valuemin="0"
-                        aria-valuemax="100"
-                      ></div>
+                        aria-valuemax="100"></div>
                     </div>
                     <p className="text-center font-semibold text-gray-700">
                       {getScoreLabel(results.scores?.overall || 0)}
                     </p>
                   </div>
-
-                  {/* Detailed Scores Grid */}
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
                       <div className="text-2xl font-bold text-blue-600 mb-1">
@@ -605,7 +476,6 @@ const PronunciationPractice = () => {
                         Pronunciation
                       </div>
                     </div>
-
                     <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
                       <div className="text-2xl font-bold text-green-600 mb-1">
                         {results.scores?.fluency?.toFixed(1) || 0}/100
@@ -615,7 +485,6 @@ const PronunciationPractice = () => {
                       </div>
                       <div className="text-xs text-green-600 mt-1">Fluency</div>
                     </div>
-
                     <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 text-center border border-purple-200">
                       <div className="text-2xl font-bold text-purple-600 mb-1">
                         {results.scores?.intonation?.toFixed(1) || 0}/100
@@ -627,7 +496,6 @@ const PronunciationPractice = () => {
                         Intonation
                       </div>
                     </div>
-
                     <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 text-center border border-orange-200">
                       <div className="text-2xl font-bold text-orange-600 mb-1">
                         {results.scores?.stress?.toFixed(1) || 0}/100
@@ -638,8 +506,6 @@ const PronunciationPractice = () => {
                       <div className="text-xs text-orange-600 mt-1">Stress</div>
                     </div>
                   </div>
-
-                  {/* Transcription */}
                   <div className="mb-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-3">
                       Văn bản nhận diện
@@ -650,8 +516,6 @@ const PronunciationPractice = () => {
                       </p>
                     </div>
                   </div>
-
-                  {/* AI Feedback */}
                   {results.feedback && (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-gray-800 mb-3">
@@ -664,39 +528,97 @@ const PronunciationPractice = () => {
                       </div>
                     </div>
                   )}
-
-                  {/* Word Accuracy */}
-                  {results.word_accuracy && results.word_accuracy.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                        Độ chính xác từng từ
-                      </h3>
-                      <div className="grid grid-cols-2 gap-2">
-                        {results.word_accuracy.map((wordData, index) => (
-                          <div
-                            key={index}
-                            className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 hover:shadow-md transition-shadow"
-                          >
-                            <div className="text-sm font-medium text-gray-800 mb-1 truncate">
-                              {wordData.word}
-                            </div>
+                  {results.word_accuracy &&
+                    results.word_accuracy.length > 0 && (
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                          Độ chính xác từng từ
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                          {results.word_accuracy.map((wordData, index) => (
                             <div
-                              className={`text-lg font-bold ${
-                                wordData.accuracy_percentage >= 90
-                                  ? "text-green-600"
-                                  : wordData.accuracy_percentage >= 75
-                                  ? "text-blue-600"
-                                  : wordData.accuracy_percentage >= 60
-                                  ? "text-yellow-600"
-                                  : "text-red-600"
-                              }`}
-                            >
-                              {wordData.accuracy_percentage?.toFixed(0) || 0}%
+                              key={index}
+                              className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 hover:shadow-md transition-shadow">
+                              <div className="text-sm font-medium text-gray-800 mb-1 truncate">
+                                {wordData.word}
+                              </div>
+                              <div
+                                className={`text-lg font-bold ${
+                                  wordData.accuracy_percentage >= 90
+                                    ? "text-green-600"
+                                    : wordData.accuracy_percentage >= 75
+                                    ? "text-blue-600"
+                                    : wordData.accuracy_percentage >= 60
+                                    ? "text-yellow-600"
+                                    : "text-red-600"
+                                }`}>
+                                {wordData.accuracy_percentage?.toFixed(0) || 0}%
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {showHistoryModal && (
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) setShowHistoryModal(false);
+              }}>
+              <div className="absolute inset-0 bg-black/50" />
+              <div className="relative bg-white rounded-xl shadow-2xl w-[90vw] max-w-2xl max-h-[85vh] flex flex-col">
+                <div className="sticky top-0 flex items-center justify-between p-4 border-b bg-white rounded-t-xl">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    Lịch sử luyện tập
+                  </h2>
+                  <button
+                    onClick={() => setShowHistoryModal(false)}
+                    className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
+                    aria-label="Đóng">
+                    <X size={20} />
+                  </button>
+                </div>
+                <div className="p-6 overflow-y-auto">
+                  {history.length > 0 ? (
+                    <ul className="space-y-4">
+                      {history.map((item) => (
+                        <li
+                          key={item.id}
+                          className="p-4 border rounded-lg hover:bg-gray-50">
+                          <p className="font-semibold text-gray-700 break-words">
+                            "{item.sentence}"
+                          </p>
+                          <p className="text-sm text-gray-500 mt-1">
+                            {new Date(item.date).toLocaleString("vi-VN")}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Điểm tổng quát:{" "}
+                            <span className="font-bold">
+                              {item.results.scores.overall.toFixed(1)}/100
+                            </span>
+                          </p>
+                          <button
+                            onClick={() => {
+                              if (item.audioBase64) {
+                                const audio = new Audio(item.audioBase64);
+                                audio.play();
+                              }
+                            }}
+                            className="mt-2 flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                            <Play size={16} /> Nghe lại
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-center text-gray-500">
+                      Chưa có lịch sử luyện tập.
+                    </p>
                   )}
                 </div>
               </div>

@@ -881,3 +881,58 @@ NameError: name 'WordMetrics' is not defined. Did you mean: 'word_metrics'?
 2025-09-30 04:41:00,712 - api_logger - INFO - [523f4474] Xử lý yêu cầu thành công.
 2025-09-30 04:42:47,890 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
 2025-09-30 04:42:47,891 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:01:38,163 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:01:38,164 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:11:18,665 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:11:18,666 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:13:16,057 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:13:16,057 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:15:10,089 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:15:10,090 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:21:17,533 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:21:17,534 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:21:32,667 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:21:32,667 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:22:14,213 - api_logger - INFO - [a6fee4c6] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-09 23:22:24,315 - api_logger - INFO - [a6fee4c6] Whisper transcribe xong trong 10101.7 ms
+2025-10-09 23:22:34,797 - api_logger - INFO - [a6fee4c6] Đánh giá phát âm xong trong 9036.9 ms
+2025-10-09 23:22:34,797 - api_logger - INFO - [a6fee4c6] Xử lý yêu cầu thành công.
+2025-10-09 23:22:34,800 - api_logger - ERROR - [a6fee4c6] Đã xảy ra lỗi không mong muốn.
+Traceback (most recent call last):
+  File "D:\STP\whisper\services\pronunciation_service.py", line 226, in process_phonetic_evaluation
+    return PhoneticPronunciationResponse(
+        original_sentence=request.sentence,
+    ...<9 lines>...
+        word_timestamps=word_timestamps  # <-- THÊM DÒNG NÀY VÀO
+    )
+  File "D:\STP\whisper\venv\Lib\site-packages\pydantic\main.py", line 253, in __init__
+    validated_self = self.__pydantic_validator__.validate_python(data, self_instance=self)
+pydantic_core._pydantic_core.ValidationError: 2 validation errors for PhoneticPronunciationResponse
+reference_phonemes
+  Input should be a valid string [type=string_type, input_value=[PhonemeData(word='hello'...phoneme='t ə d ˈeɪ')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+learner_phonemes
+  Input should be a valid string [type=string_type, input_value=[PhonemeData(word='Hello'...phoneme='t ə d ˈeɪ')], input_type=list]
+    For further information visit https://errors.pydantic.dev/2.11/v/string_type
+2025-10-09 23:32:11,188 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:32:11,188 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:32:15,758 - api_logger - INFO - [79984fc0] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-09 23:32:24,016 - api_logger - INFO - [79984fc0] Whisper transcribe xong trong 8257.3 ms
+2025-10-09 23:32:31,622 - api_logger - INFO - [79984fc0] Đánh giá phát âm xong trong 7208.2 ms
+2025-10-09 23:32:31,622 - api_logger - INFO - [79984fc0] Xử lý yêu cầu thành công.
+2025-10-09 23:37:58,315 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:37:58,315 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:38:23,549 - api_logger - INFO - [2821c087] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-09 23:38:33,353 - api_logger - INFO - [2821c087] Whisper transcribe xong trong 9803.8 ms
+2025-10-09 23:38:44,010 - api_logger - INFO - [2821c087] Đánh giá phát âm xong trong 10211.0 ms
+2025-10-09 23:38:44,010 - api_logger - INFO - [2821c087] Xử lý yêu cầu thành công.
+2025-10-09 23:44:57,529 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-09 23:44:57,530 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-09 23:45:18,916 - api_logger - INFO - [f02033e8] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-09 23:45:29,245 - api_logger - INFO - [f02033e8] Whisper transcribe xong trong 10329.3 ms
+2025-10-09 23:45:40,237 - api_logger - INFO - [f02033e8] Đánh giá phát âm xong trong 10585.2 ms
+2025-10-09 23:45:40,238 - api_logger - INFO - [f02033e8] Xử lý yêu cầu thành công.
+2025-10-09 23:47:36,649 - api_logger - INFO - [2285f8dd] Nhận yêu cầu /evaluate-pronunciation-phonetic cho câu: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-09 23:47:42,495 - api_logger - INFO - [2285f8dd] Whisper transcribe xong trong 5845.8 ms
+2025-10-09 23:47:42,905 - api_logger - INFO - [2285f8dd] Đánh giá phát âm xong trong 4.6 ms
+2025-10-09 23:47:42,905 - api_logger - INFO - [2285f8dd] Xử lý yêu cầu thành công.

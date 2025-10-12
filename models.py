@@ -1,6 +1,13 @@
 from pydantic import BaseModel
 from typing import List, Optional, Any
 
+
+class WordTimestamp(BaseModel):
+    """Word-level timestamp and confidence from Whisper"""
+    word: str
+    start: float  # Start time in seconds
+    end: float    # End time in seconds
+
 class PronunciationScore(BaseModel):
     """Pronunciation scoring results"""
     pronunciation: float 
@@ -65,20 +72,6 @@ class AudioAnalysis(BaseModel):
     issues: List[str]
     quality_score: float
 
-class PhoneticPronunciationResponse(BaseModel):
-    """
-    Mô hình response cho việc đánh giá phát âm dựa trên âm vị.
-    """
-    original_sentence: str
-    transcribed_text: str  # Văn bản được Whisper phiên âm
-    reference_phonemes: str # Chuỗi âm vị chuẩn
-    learner_phonemes: str   # Chuỗi âm vị của người học
-    scores: PronunciationScore
-    phoneme_errors: List[dict] # Danh sách các lỗi sai về âm vị
-    feedback: str # Phản hồi từ LLM
-    wer_score: float # Tỷ lệ lỗi âm vị (Phoneme Error Rate)
-    confidence: float # Độ tin cậy của Whisper
-
 class PhonemeData(BaseModel):
     word: str
     phoneme: str
@@ -88,13 +81,17 @@ class WordAccuracyData(BaseModel):
     accuracy_percentage: float  # Tỉ lệ % phiên âm đúng (0.0 - 100.0)
 
 class PhoneticPronunciationResponse(BaseModel):
+    """
+    Mô hình response cho việc đánh giá phát âm dựa trên âm vị.
+    """
     original_sentence: str
-    transcribed_text: str
-    reference_phonemes: List[PhonemeData] 
-    learner_phonemes: List[PhonemeData]
-    word_accuracy: List[WordAccuracyData]  # Thêm trường accuracy cho từng từ
+    transcribed_text: str  # Văn bản được Whisper phiên âm
+    reference_phonemes: List[PhonemeData]
+    learner_phonemes: List[PhonemeData] 
+    word_accuracy: List[WordAccuracyData] # Thêm trường accuracy cho từng từ
     scores: PronunciationScore
-    phoneme_errors: List[dict]
-    feedback: str
-    wer_score: float
-    confidence: float
+    phoneme_errors: List[dict] # Danh sách các lỗi sai về âm vị
+    feedback: str # Phản hồi từ LLM
+    wer_score: float # Tỷ lệ lỗi âm vị (Phoneme Error Rate)
+    confidence: float # Độ tin cậy của Whisper
+    word_timestamps: List[WordTimestamp] # Thời gian và độ tin cậy từng từ
