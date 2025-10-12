@@ -881,3 +881,55 @@ NameError: name 'WordMetrics' is not defined. Did you mean: 'word_metrics'?
 2025-09-30 04:41:00,712 - api_logger - INFO - [523f4474] Xử lý yêu cầu thành công.
 2025-09-30 04:42:47,890 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
 2025-09-30 04:42:47,891 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-12 23:36:29,884 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-12 23:36:29,885 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-12 23:36:39,143 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-12 23:36:39,143 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-12 23:36:42,185 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-12 23:36:42,185 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-12 23:36:42,186 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-12 23:36:42,186 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-12 23:36:45,182 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-12 23:36:45,182 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-12 23:36:56,762 - api_logger - INFO - Warmup thành công.
+2025-10-12 23:36:56,762 - api_logger - INFO - Warmup thành công.
+2025-10-12 23:56:12,978 - api_logger - INFO - [94db7b2b] Received request for: 'Hello everyone, welcome to our English pronunciation practice'
+2025-10-12 23:56:12,978 - api_logger - INFO - [94db7b2b] Received request for: 'Hello everyone, welcome to our English pronunciation practice'
+2025-10-12 23:56:24,355 - api_logger - INFO - [94db7b2b] Whisper transcribed in 11373.7 ms
+2025-10-12 23:56:24,355 - api_logger - INFO - [94db7b2b] Whisper transcribed in 11373.7 ms
+2025-10-12 23:56:24,727 - api_logger - INFO - [94db7b2b] Pronunciation evaluated in 14.3 ms
+2025-10-12 23:56:24,727 - api_logger - INFO - [94db7b2b] Pronunciation evaluated in 14.3 ms
+2025-10-12 23:56:24,729 - api_logger - INFO - [94db7b2b] Request processed successfully.
+2025-10-12 23:56:24,729 - api_logger - INFO - [94db7b2b] Request processed successfully.
+2025-10-12 23:57:28,797 - api_logger - INFO - [9579c5bf] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-12 23:57:28,797 - api_logger - INFO - [9579c5bf] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-12 23:57:33,930 - api_logger - INFO - [9579c5bf] Whisper transcribed in 5133.2 ms
+2025-10-12 23:57:33,930 - api_logger - INFO - [9579c5bf] Whisper transcribed in 5133.2 ms
+2025-10-12 23:57:34,292 - api_logger - INFO - [9579c5bf] Pronunciation evaluated in 2.2 ms
+2025-10-12 23:57:34,292 - api_logger - INFO - [9579c5bf] Pronunciation evaluated in 2.2 ms
+2025-10-12 23:57:34,293 - api_logger - INFO - [9579c5bf] Request processed successfully.
+2025-10-12 23:57:34,293 - api_logger - INFO - [9579c5bf] Request processed successfully.
+2025-10-13 00:04:17,786 - api_logger - INFO - [709926c3] Received request for: 'Hello everyone, welcome to our English pronunciation practice'
+2025-10-13 00:04:17,786 - api_logger - INFO - [709926c3] Received request for: 'Hello everyone, welcome to our English pronunciation practice'
+2025-10-13 00:04:23,411 - api_logger - INFO - [709926c3] Whisper transcribed in 5624.7 ms
+2025-10-13 00:04:23,411 - api_logger - INFO - [709926c3] Whisper transcribed in 5624.7 ms
+2025-10-13 00:04:23,788 - api_logger - INFO - [709926c3] Pronunciation evaluated in 3.2 ms
+2025-10-13 00:04:23,788 - api_logger - INFO - [709926c3] Pronunciation evaluated in 3.2 ms
+2025-10-13 00:04:23,788 - api_logger - INFO - [709926c3] Request processed successfully.
+2025-10-13 00:04:23,788 - api_logger - INFO - [709926c3] Request processed successfully.
+2025-10-13 00:23:33,624 - api_logger - INFO - [0ccb61ff] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-13 00:23:33,624 - api_logger - INFO - [0ccb61ff] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-13 00:23:41,246 - api_logger - INFO - [0ccb61ff] Whisper transcribed in 7621.4 ms
+2025-10-13 00:23:41,246 - api_logger - INFO - [0ccb61ff] Whisper transcribed in 7621.4 ms
+2025-10-13 00:23:41,618 - api_logger - INFO - [0ccb61ff] Pronunciation evaluated in 7.5 ms
+2025-10-13 00:23:41,618 - api_logger - INFO - [0ccb61ff] Pronunciation evaluated in 7.5 ms
+2025-10-13 00:23:41,621 - api_logger - INFO - [0ccb61ff] Request processed successfully.
+2025-10-13 00:23:41,621 - api_logger - INFO - [0ccb61ff] Request processed successfully.
+2025-10-13 00:32:10,575 - api_logger - INFO - [8fe0778d] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-13 00:32:10,575 - api_logger - INFO - [8fe0778d] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-13 00:32:18,955 - api_logger - INFO - [8fe0778d] Whisper transcribed in 8379.7 ms
+2025-10-13 00:32:18,955 - api_logger - INFO - [8fe0778d] Whisper transcribed in 8379.7 ms
+2025-10-13 00:32:19,345 - api_logger - INFO - [8fe0778d] Pronunciation evaluated in 3.9 ms
+2025-10-13 00:32:19,345 - api_logger - INFO - [8fe0778d] Pronunciation evaluated in 3.9 ms
+2025-10-13 00:32:19,348 - api_logger - INFO - [8fe0778d] Request processed successfully.
+2025-10-13 00:32:19,348 - api_logger - INFO - [8fe0778d] Request processed successfully.
