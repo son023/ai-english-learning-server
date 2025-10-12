@@ -24,7 +24,7 @@ def get_word_distance_matrix(words_estimated: list, words_real: list) -> np.ndar
     if offset_blank == 1:
         for idx_real in range(number_of_real_words):
             word_distance_matrix[number_of_estimated_words,
-                                 idx_real] = len(words_real[idx_real])
+                                idx_real] = len(words_real[idx_real])
     return word_distance_matrix
 
 def get_best_mapped_words_dtw(words_estimated: list, words_real: list): 
