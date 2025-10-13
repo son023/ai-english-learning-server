@@ -12,6 +12,8 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import HeaderNav from "./HeaderNav";
+import Result from "./Result";
+import AlignmentVisualization from "./AlignmentVisualization";
 
 // ===== IndexedDB Helper Functions =====
 const DB_NAME = "PronunciationAppDB";
@@ -69,71 +71,6 @@ const PhonemeTooltip = ({ word, phoneme, onClose }) => (
   </div>
 );
 
-const AlignmentVisualization = ({ alignmentData }) => {
-  if (!alignmentData || alignmentData.length === 0) {
-    return <p className="text-gray-500">Không có dữ liệu alignment.</p>;
-  }
-
-  const renderPhoneme = (phoneme, isMatch) => {
-    let colorClass = "text-gray-800";
-    if (isMatch === true) colorClass = "text-green-600 font-semibold";
-    if (isMatch === false) colorClass = "text-red-600 font-semibold";
-
-    return (
-      <span
-        className={`inline-block px-2 py-1 border rounded-md ${colorClass} ${
-          isMatch === false
-            ? "bg-red-50 border-red-200"
-            : isMatch === true
-            ? "bg-green-50 border-green-200"
-            : "bg-gray-100 border-gray-200"
-        }`}>
-        {phoneme || "—"}
-      </span>
-    );
-  };
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h4 className="text-sm font-semibold text-gray-600 mb-2">
-          Phiên âm mẫu (Reference)
-        </h4>
-        <div className="flex flex-wrap gap-2">
-          {alignmentData.map((item, index) => (
-            <div key={`ref-${index}`}>
-              {renderPhoneme(
-                item.ref,
-                item.ref && item.learner ? item.is_match : null
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h4 className="text-sm font-semibold text-gray-600 mb-2">
-          Phiên âm của bạn (Learner)
-        </h4>
-        <div className="flex flex-wrap gap-2">
-          {alignmentData.map((item, index) => (
-            <div key={`learner-${index}`}>
-              {renderPhoneme(
-                item.learner,
-                item.ref && item.learner ? item.is_match : null
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-      <p className="text-xs text-gray-500 pt-2">
-        <span className="text-green-600 font-semibold">Màu xanh:</span> Khớp
-        đúng.
-        <span className="text-red-600 font-semibold ml-2">Màu đỏ:</span> Sai
-        hoặc thiếu/thừa.
-      </p>
-    </div>
-  );
-};
 
 const PronunciationPractice = ({ page, setPage }) => {
   const [isRecording, setIsRecording] = useState(false);
@@ -319,13 +256,6 @@ const PronunciationPractice = ({ page, setPage }) => {
     return "score-poor";
   };
 
-  const getScoreLabel = (score) => {
-    if (score >= 90) return "Xuất sắc";
-    if (score >= 75) return "Tốt";
-    if (score >= 60) return "Khá";
-    return "Cần cải thiện";
-  };
-
   const playTextToSpeech = (text) => {
     if ("speechSynthesis" in window) {
       speechSynthesis.cancel();
@@ -355,6 +285,139 @@ const PronunciationPractice = ({ page, setPage }) => {
     const newAudioUrl = URL.createObjectURL(historyItem.audioBlob);
     setHistoryAudioUrl(newAudioUrl);
     setShowResultsModal(true);
+  };
+    const renderColoredPracticeTextWithPhonemes = () => {
+    const alignment = results.phoneme_alignment || [];
+
+    function buildColoredSentence(targetText, advanceOn) {
+      const words = (targetText || "").split(/\s+/);
+      let wordIndex = 0;
+      const coloredSegments = [];
+
+      alignment.forEach((pair) => {
+        const shouldAdvance =
+          advanceOn === "ref" ? pair.ref !== null : pair.learner !== null;
+        if (!shouldAdvance) return;
+
+        const word = words[wordIndex] ?? "";
+        let wordSpans = [];
+
+        const refSym = pair.ref;
+        const learnerSym = pair.learner;
+        const emphasisClass =
+          advanceOn === "ref" ? "font-bold underline" : "underline";
+        if (
+          (advanceOn === "ref" && learnerSym === null) ||
+          (advanceOn === "learner" && refSym === null)
+        ) {
+          wordSpans.push(
+            <span
+              key={`word-${advanceOn}-${wordIndex}`}
+              className={`text-red-600 ${emphasisClass}`}
+            >
+              {word}
+            </span>
+          );
+        } else if (pair.is_match) {
+          wordSpans.push(
+            <span
+              key={`word-${advanceOn}-${wordIndex}`}
+              className={`text-green-600 ${emphasisClass}`}
+            >
+              {word}
+            </span>
+          );
+        } else {
+          const subAlignment = pair.sub_alignment || [];
+          const charCount =
+            (advanceOn === "ref"
+              ? (refSym || "").length
+              : (learnerSym || "").length) || 1;
+          let subIdxCount = 0;
+
+          subAlignment.forEach((subPair, subIdx) => {
+            const consider =
+              advanceOn === "ref"
+                ? subPair.ref !== null
+                : subPair.learner !== null;
+            if (!consider) return;
+            const isCorrect = !!subPair.is_match;
+            const colorClass = isCorrect
+              ? `text-green-600 ${emphasisClass}`
+              : `text-red-600 ${emphasisClass}`;
+
+            const start = Math.floor((subIdxCount * word.length) / charCount);
+            const end = Math.floor(
+              ((subIdxCount + 1) * word.length) / charCount
+            );
+            const part = word.substring(start, end);
+            if (part) {
+              wordSpans.push(
+                <span
+                  key={`sub-${advanceOn}-${wordIndex}-${subIdx}`}
+                  className={colorClass}
+                >
+                  {part}
+                </span>
+              );
+            }
+            subIdxCount++;
+          });
+
+          const lastEnd = Math.floor((charCount * word.length) / charCount);
+          if (lastEnd < word.length) {
+            const remaining = word.substring(lastEnd);
+            if (wordSpans.length > 0) {
+              const lastSpan = wordSpans[wordSpans.length - 1];
+              wordSpans[wordSpans.length - 1] = (
+                <span key={lastSpan.key} className={lastSpan.props.className}>
+                  {lastSpan.props.children + remaining}
+                </span>
+              );
+            } else {
+              wordSpans.push(
+                <span
+                  key={`remain-${advanceOn}-${wordIndex}`}
+                  className="text-red-600 font-bold underline"
+                >
+                  {remaining}
+                </span>
+              );
+            }
+          }
+        }
+
+        coloredSegments.push(...wordSpans);
+        wordIndex++;
+        if (wordIndex < words.length) coloredSegments.push(" ");
+      });
+
+      return coloredSegments.length > 0 ? coloredSegments : [targetText];
+    }
+
+    const refSentenceColored = buildColoredSentence(practiceText, "ref");
+    const learnerSentenceColored = results.transcribed_text || "";
+
+    return (
+      <div className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-600 mb-2">
+            Câu gốc
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
+            {refSentenceColored}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-gray-600 mb-2">
+            Câu bạn đọc
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
+            {learnerSentenceColored}
+          </div>
+</div>
+      </div>
+    );
   };
 
   return (
@@ -518,131 +581,23 @@ const PronunciationPractice = ({ page, setPage }) => {
           </aside>
         </div>
 
-        {showResultsModal && results && (
-          <div
-            className="fixed inset-0 z-40 flex items-center justify-center"
-            onClick={() => {
-              setShowResultsModal(false);
-              reset();
-            }}>
-            <div
-              className="relative bg-white rounded-xl shadow-2xl w-[70vw] max-w-[70vw] max-h-[85vh] overflow-y-auto border"
-              onClick={(e) => e.stopPropagation()}>
-              <div className="sticky top-0 flex items-center justify-between p-4 border-b bg-white rounded-t-xl z-10">
-                <h2 className="text-xl font-semibold text-gray-800">
-                  Kết quả đánh giá
-                </h2>
-                <button
-                  onClick={() => {
-                    setShowResultsModal(false);
-                    reset();
-                  }}
-                  className="p-2 rounded-md hover:bg-gray-100 text-gray-500">
-                  {" "}
-                  <X size={20} />{" "}
-                </button>
-              </div>
-              <div className="p-6">
-                {/* Cập nhật: Thêm nút nghe lại bản ghi trong modal khi xem lịch sử */}
-                {historyAudioUrl && (
-                  <div className="mb-4">
-                    <button
-                      onClick={() => new Audio(historyAudioUrl).play()}
-                      className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all">
-                      <Play size={18} /> Nghe lại bản ghi của bạn
-                    </button>
-                  </div>
-                )}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-lg font-medium">Điểm tổng quát</span>
-                    <span className="text-3xl font-bold text-gray-800">
-                      {results.scores?.overall?.toFixed(1) || 0}/100
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                    <div
-                      className={`h-4 rounded-full ${getScoreColor(
-                        results.scores?.overall || 0
-                      )} transition-all duration-1000 ease-out`}
-                      style={{
-                        width: `${results.scores?.overall || 0}%`,
-                      }}></div>
-                  </div>
-                  <p className="text-center font-semibold text-gray-700">
-                    {getScoreLabel(results.scores?.overall || 0)}
-                  </p>
-                </div>
-
-                {results.word_accuracy && results.word_accuracy.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Phân tích từng từ
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                      {results.word_accuracy.map((wordData, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                          <div className="flex justify-between items-baseline">
-                            <span className="text-base font-semibold text-gray-800">
-                              {wordData.word}
-                            </span>
-                            <span
-                              className={`text-lg font-bold ${getScoreColor(
-                                wordData.accuracy_percentage
-                              )}`}>
-                              {wordData.accuracy_percentage?.toFixed(0)}%
-                            </span>
-                          </div>
-                          <div className="mt-2 text-xs text-gray-500 space-y-1">
-                            <div className="flex justify-between">
-                              <span>Phát âm:</span>{" "}
-                              <span>
-                                {wordData.pronunciation_score.toFixed(0)}%
-                              </span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span>Nhịp điệu:</span>{" "}
-                              <span>{wordData.rhythm_score.toFixed(0)}%</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {results.phoneme_alignment &&
-                  results.phoneme_alignment.length > 0 && (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                        So sánh phiên âm chi tiết
-                      </h3>
-                      <div className="bg-white rounded-lg p-4 border border-gray-200">
-                        <AlignmentVisualization
-                          alignmentData={results.phoneme_alignment}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                {results.feedback && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                      Nhận xét từ AI
-                    </h3>
-                    <div
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 prose max-w-none text-gray-700"
-                      dangerouslySetInnerHTML={{
-                        __html: results.feedback.replace(/\n/g, "<br />"),
-                      }}></div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        <Result
+          show={showResultsModal}
+          results={results}
+          onClose={() => {
+            setShowResultsModal(false);
+            reset();
+          }}
+          historyAudioUrl={historyAudioUrl}
+          renderColoredText={renderColoredPracticeTextWithPhonemes}
+          alignmentVisualization={
+            results?.phoneme_alignment?.length > 0 ? (
+              <AlignmentVisualization
+                alignmentData={results.phoneme_alignment}
+              />
+            ) : null
+          }
+        />
       </main>
     </div>
   );

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Volume2, Mic, MicOff, Send, RotateCcw, Play, X } from "lucide-react";
 import axios from "axios";
 import HeaderNav from "./HeaderNav";
+import Result from "./Result";
+import AlignmentVisualization from "./AlignmentVisualization";
 import { AcademicCapIcon, BriefcaseIcon, ChatBubbleBottomCenterTextIcon, GlobeAmericasIcon } from "@heroicons/react/24/solid";
 
 const GOALS = [
@@ -212,6 +214,142 @@ export default function ThreeStepPractice({ page, setPage }) {
     return missionInfo.sentences[idx].replace(/^\[translate:|\]$/g, "");
   }, [missionInfo, selectedSentenceIndex]);
 
+  const renderColoredTextWithPhonemes = () => {
+    if (!results || !results.phoneme_alignment) return null;
+    
+    const alignment = results.phoneme_alignment || [];
+
+    function buildColoredSentence(targetText, advanceOn) {
+      const words = (targetText || "").split(/\s+/);
+      let wordIndex = 0;
+      const coloredSegments = [];
+
+      alignment.forEach((pair) => {
+        const shouldAdvance =
+          advanceOn === "ref" ? pair.ref !== null : pair.learner !== null;
+        if (!shouldAdvance) return;
+
+        const word = words[wordIndex] ?? "";
+        let wordSpans = [];
+
+        const refSym = pair.ref;
+        const learnerSym = pair.learner;
+        const emphasisClass =
+          advanceOn === "ref" ? "font-bold underline" : "underline";
+        if (
+          (advanceOn === "ref" && learnerSym === null) ||
+          (advanceOn === "learner" && refSym === null)
+        ) {
+          wordSpans.push(
+            <span
+              key={`word-${advanceOn}-${wordIndex}`}
+              className={`text-red-600 ${emphasisClass}`}
+            >
+              {word}
+            </span>
+          );
+        } else if (pair.is_match) {
+          wordSpans.push(
+            <span
+              key={`word-${advanceOn}-${wordIndex}`}
+              className={`text-green-600 ${emphasisClass}`}
+            >
+              {word}
+            </span>
+          );
+        } else {
+          const subAlignment = pair.sub_alignment || [];
+          const charCount =
+            (advanceOn === "ref"
+              ? (refSym || "").length
+              : (learnerSym || "").length) || 1;
+          let subIdxCount = 0;
+
+          subAlignment.forEach((subPair, subIdx) => {
+            const consider =
+              advanceOn === "ref"
+                ? subPair.ref !== null
+                : subPair.learner !== null;
+            if (!consider) return;
+            const isCorrect = !!subPair.is_match;
+            const colorClass = isCorrect
+              ? `text-green-600 ${emphasisClass}`
+              : `text-red-600 ${emphasisClass}`;
+
+            const start = Math.floor((subIdxCount * word.length) / charCount);
+            const end = Math.floor(
+              ((subIdxCount + 1) * word.length) / charCount
+            );
+            const part = word.substring(start, end);
+            if (part) {
+              wordSpans.push(
+                <span
+                  key={`sub-${advanceOn}-${wordIndex}-${subIdx}`}
+                  className={colorClass}
+                >
+                  {part}
+                </span>
+              );
+            }
+            subIdxCount++;
+          });
+
+          const lastEnd = Math.floor((charCount * word.length) / charCount);
+          if (lastEnd < word.length) {
+            const remaining = word.substring(lastEnd);
+            if (wordSpans.length > 0) {
+              const lastSpan = wordSpans[wordSpans.length - 1];
+              wordSpans[wordSpans.length - 1] = (
+                <span key={lastSpan.key} className={lastSpan.props.className}>
+                  {lastSpan.props.children + remaining}
+                </span>
+              );
+            } else {
+              wordSpans.push(
+                <span
+                  key={`remain-${advanceOn}-${wordIndex}`}
+                  className="text-red-600 font-bold underline"
+                >
+                  {remaining}
+                </span>
+              );
+            }
+          }
+        }
+
+        coloredSegments.push(...wordSpans);
+        wordIndex++;
+        if (wordIndex < words.length) coloredSegments.push(" ");
+      });
+
+      return coloredSegments.length > 0 ? coloredSegments : [targetText];
+    }
+
+    const refSentenceColored = buildColoredSentence(currentSentence, "ref");
+    const learnerSentenceColored = results.transcribed_text || "";
+
+    return (
+      <div className="space-y-3">
+        <div>
+          <div className="text-sm font-semibold text-gray-600 mb-2">
+            Câu gốc
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
+            {refSentenceColored}
+          </div>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-gray-600 mb-2">
+            Câu bạn đọc
+          </div>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
+            {learnerSentenceColored}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const submitAudio = async () => {
     if (!audioBlob) {
       alert("Vui lòng ghi âm trước khi gửi!");
@@ -246,19 +384,6 @@ export default function ThreeStepPractice({ page, setPage }) {
     }
   };
 
-  const getScoreColor = (score) => {
-    if (score >= 90) return "score-excellent";
-    if (score >= 75) return "score-good";
-    if (score >= 60) return "score-fair";
-    return "score-poor";
-  };
-
-  const getScoreLabel = (score) => {
-    if (score >= 90) return "Xuất sắc";
-    if (score >= 75) return "Tốt";
-    if (score >= 60) return "Khá";
-    return "Cần cải thiện";
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -421,155 +546,23 @@ export default function ThreeStepPractice({ page, setPage }) {
         )}
       </div>
 
-      {showResultsModal && results && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="results-heading"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowResultsModal(false);
-          }}
-        >
-          <div className="absolute inset-0 bg-black/50" />
-          <div className="relative bg-white rounded-xl shadow-2xl w-[70vw] max-w-[70vw] max-h-[85vh] overflow-y-auto border">
-            <div className="sticky top-0 flex items-center justify-between p-4 border-b bg-white rounded-t-xl">
-              <h2 id="results-heading" className="text-xl font-semibold text-gray-800">
-                Kết quả đánh giá
-              </h2>
-              <button
-                onClick={() => setShowResultsModal(false)}
-                className="p-2 rounded-md hover:bg-gray-100 text-gray-500"
-                aria-label="Đóng"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6">
-              {/* Overall Score */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-lg font-medium">Điểm tổng quát</span>
-                  <span className="text-3xl font-bold text-gray-800">
-                    {results.scores?.overall?.toFixed(1) || 0}/100
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4 mb-2">
-                  <div
-                    className={`h-4 rounded-full ${getScoreColor(
-                      results.scores?.overall || 0
-                    )} transition-all duration-1000 ease-out`}
-                    style={{ width: `${results.scores?.overall || 0}%` }}
-                    role="progressbar"
-                    aria-valuenow={results.scores?.overall || 0}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                  ></div>
-                </div>
-                <p className="text-center font-semibold text-gray-700">
-                  {getScoreLabel(results.scores?.overall || 0)}
-                </p>
-              </div>
-
-              {/* Detailed Scores Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-4 text-center border border-blue-200">
-                  <div className="text-2xl font-bold text-blue-600 mb-1">
-                    {results.scores?.pronunciation?.toFixed(1) || 0}/100
-                  </div>
-                  <div className="text-sm font-medium text-blue-800">Phát âm</div>
-                  <div className="text-xs text-blue-600 mt-1">Pronunciation</div>
-                </div>
-
-                <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg p-4 text-center border border-green-200">
-                  <div className="text-2xl font-bold text-green-600 mb-1">
-                    {results.scores?.fluency?.toFixed(1) || 0}/100
-                  </div>
-                  <div className="text-sm font-medium text-green-800">Lưu loát</div>
-                  <div className="text-xs text-green-600 mt-1">Fluency</div>
-                </div>
-
-                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-lg p-4 text-center border border-purple-200">
-                  <div className="text-2xl font-bold text-purple-600 mb-1">
-                    {results.scores?.intonation?.toFixed(1) || 0}/100
-                  </div>
-                  <div className="text-sm font-medium text-purple-800">Ngữ điệu</div>
-                  <div className="text-xs text-purple-600 mt-1">Intonation</div>
-                </div>
-
-                <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg p-4 text-center border border-orange-200">
-                  <div className="text-2xl font-bold text-orange-600 mb-1">
-                    {results.scores?.stress?.toFixed(1) || 0}/100
-                  </div>
-                  <div className="text-sm font-medium text-orange-800">Trọng âm</div>
-                  <div className="text-xs text-orange-600 mt-1">Stress</div>
-                </div>
-              </div>
-
-              {/* Transcription */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  Văn bản nhận diện
-                </h3>
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
-                  <p className="text-gray-800 italic font-medium">
-                    "{results.transcribed_text}"
-                  </p>
-                </div>
-              </div>
-
-              {/* AI Feedback */}
-              {results.feedback && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                    Nhận xét từ AI
-                  </h3>
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                    <p className="text-gray-700 leading-relaxed">
-                      {results.feedback}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Word Accuracy */}
-              {results.word_accuracy && results.word_accuracy.length > 0 && (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                    Độ chính xác từng từ
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    {results.word_accuracy.map((wordData, index) => (
-                      <div
-                        key={index}
-                        className="bg-gray-50 rounded-lg p-3 text-center border border-gray-200 hover:shadow-md transition-shadow"
-                      >
-                        <div className="text-sm font-medium text-gray-800 mb-1 truncate">
-                          {wordData.word}
-                        </div>
-                        <div
-                          className={`text-lg font-bold ${
-                            wordData.accuracy_percentage >= 90
-                              ? "text-green-600"
-                              : wordData.accuracy_percentage >= 75
-                              ? "text-blue-600"
-                              : wordData.accuracy_percentage >= 60
-                              ? "text-yellow-600"
-                              : "text-red-600"
-                          }`}
-                        >
-                          {wordData.accuracy_percentage?.toFixed(0) || 0}%
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <Result
+        show={showResultsModal}
+        results={results}
+        onClose={() => {
+          setShowResultsModal(false);
+          reset();
+        }}
+        historyAudioUrl={audioUrlRef.current}
+        renderColoredText={renderColoredTextWithPhonemes}
+        alignmentVisualization={
+          results?.phoneme_alignment?.length > 0 ? (
+            <AlignmentVisualization
+              alignmentData={results.phoneme_alignment}
+            />
+          ) : null
+        }
+      />
     </div>
   );
 }
