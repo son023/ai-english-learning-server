@@ -113,13 +113,26 @@ class PronunciationService:
         )
         wer_score = self.calculate_wer(ref_seq_all, est_seq_all)
 
-        overall = (
-            round((total_phonemes - total_mismatches) / total_phonemes * 100, 1)
-            if total_phonemes
-            else 0.0
-        )
+        # Tính điểm tổng thể bằng trung bình cộng của điểm từng từ
+        if not word_accuracy:
+            overall_accuracy = 0.0
+            overall_pronunciation = 0.0
+        else:
+            total_accuracy_sum = sum(wa.accuracy_percentage for wa in word_accuracy)
+            overall_accuracy = round(total_accuracy_sum / len(word_accuracy), 1)
+
+            # Bạn cũng có thể tính điểm phát âm tổng thể riêng nếu muốn
+            total_pron_sum = sum(wa.pronunciation_score for wa in word_accuracy)
+            overall_pronunciation = round(total_pron_sum / len(word_accuracy), 1)
+
         scores = PronunciationScore(
-            pronunciation=overall, fluency=0.0, intonation=0.0, stress=0.0, overall=overall
+            # Sử dụng điểm phát âm trung bình cho 'pronunciation'
+            pronunciation=overall_pronunciation, 
+            fluency=0.0, 
+            intonation=0.0, 
+            stress=0.0, 
+            # Sử dụng điểm kết hợp trung bình cho 'overall'
+            overall=overall_accuracy
         )
 
         return scores, phoneme_errors, wer_score, word_accuracy
