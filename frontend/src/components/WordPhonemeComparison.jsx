@@ -146,14 +146,12 @@ const WordPhonemeComparison = ({
         </h4>
         <div className="flex flex-wrap gap-2">
           {(() => {
-            const displayedLearners = new Set();
-
             return alignmentData.map((item, index) => {
               // Lấy độ dài phoneme reference (để tính độ dài ô trống)
               const refLength = item.ref ? item.ref.length : 0;
 
               // Nếu không có learner → hiển thị dấu gạch dưới
-              if (!item.learner) {
+              if (!item.learner || !item.ref) {
                 return (
                   <React.Fragment key={`learner-missing-${index}`}>
                     {renderPhoneme(null, null, false, false, refLength)}
@@ -161,19 +159,6 @@ const WordPhonemeComparison = ({
                 );
               }
 
-              // Nếu learner này đã được hiển thị rồi → hiển thị dấu gạch dưới
-              if (displayedLearners.has(item.learner)) {
-                return (
-                  <React.Fragment key={`learner-duplicate-${index}`}>
-                    {renderPhoneme(null, null, false, false, refLength)}
-                  </React.Fragment>
-                );
-              }
-
-              // Đánh dấu đã hiển thị
-              displayedLearners.add(item.learner);
-
-              // Hiển thị phoneme lần đầu tiên
               return (
                 <React.Fragment key={`learner-${index}`}>
                   {renderPhoneme(
