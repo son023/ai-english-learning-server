@@ -90,6 +90,15 @@ const PronunciationPractice = ({ page, setPage }) => {
   const [practiceHistory, setPracticeHistory] = useState([]);
   // Cập nhật: Thêm state để quản lý audio và modal của lịch sử
   const [historyAudioUrl, setHistoryAudioUrl] = useState(null);
+  
+  // Validation states
+  const [validationErrors, setValidationErrors] = useState({
+    required: false,
+    format: false,
+    length: false,
+    specialChars: false
+  });
+  const [isValidInput, setIsValidInput] = useState(true);
 
   const mainPracticeAreaRef = useRef(null);
 
@@ -97,6 +106,44 @@ const PronunciationPractice = ({ page, setPage }) => {
   const audioChunksRef = useRef([]);
   const audioUrlRef = useRef(null);
   const dbRef = useRef(null);
+
+  // Validation functions
+  const validateInput = (text) => {
+    const errors = {
+      required: false,
+      format: false,
+      length: false,
+      specialChars: false
+    };
+
+    if (!text.trim()) {
+      errors.required = true;
+    }
+
+    if (text.trim()) {
+      const englishPattern = /^[a-zA-Z0-9\s.,!?'"()-]+$/;
+      if (!englishPattern.test(text)) {
+        errors.format = true;
+      }
+
+      if (text.length < 10 || text.length > 500) {
+        errors.length = true;
+      }
+
+      const specialCharPattern = /[^a-zA-Z0-9\s.,!?'"()-]/g;
+      const specialCharMatches = text.match(specialCharPattern);
+      if (specialCharMatches && specialCharMatches.length > 5) {
+        errors.specialChars = true;
+      }
+    }
+
+    return errors;
+  };
+
+  const isValidFormat = (text) => {
+    const errors = validateInput(text);
+    return !Object.values(errors).some(error => error);
+  };
 
   // Khởi tạo DB khi component mount
   useEffect(() => {
@@ -148,6 +195,12 @@ const PronunciationPractice = ({ page, setPage }) => {
     return () => clearTimeout(debounceTimeout);
   }, [practiceText]);
 
+  useEffect(() => {
+    const errors = validateInput(practiceText);
+    setValidationErrors(errors);
+    setIsValidInput(!Object.values(errors).some(error => error));
+  }, [practiceText]);
+
   const saveToHistory = async (newResults, newAudioBlob) => {
     if (!dbRef.current) return;
     const newEntry = {
@@ -176,6 +229,11 @@ const PronunciationPractice = ({ page, setPage }) => {
   };
 
   const startRecording = async () => {
+    if (!isValidInput || !isValidFormat(practiceText)) {
+      alert("Vui lòng sửa lỗi trong câu nhập trước khi ghi âm!");
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mediaRecorder = new MediaRecorder(stream, {
@@ -214,8 +272,18 @@ const PronunciationPractice = ({ page, setPage }) => {
       reader.readAsDataURL(blob);
     });
 
-  const submitAudio = async () => {
+  const handleSubmitAudio = async () => {
     if (!audioBlob) return;
+    
+    if (!isValidInput || !isValidFormat(practiceText)) {
+      alert("Câu nhập sai chính tả hoặc không hợp lệ! Vui lòng kiểm tra lại.");
+      return;
+    }
+    
+    await submitAudio();
+  };
+
+  const submitAudio = async () => {
     setIsLoading(true);
     try {
       const base64Audio = await convertToBase64(audioBlob);
@@ -495,10 +563,43 @@ const PronunciationPractice = ({ page, setPage }) => {
                   setPracticeText(e.target.value);
                   reset();
                 }}
-                className="w-full p-4 border border-gray-300 rounded-lg"
+                className={`w-full p-4 border rounded-lg ${
+                  !isValidInput 
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
+                }`}
                 rows="4"
-                placeholder="Nhập câu bạn muốn luyện tập..."
+                placeholder="Nhập câu bạn muốn luyện tập... (10-500 ký tự, chỉ tiếng Anh)"
+                spellCheck={true}
               />
+              
+              {/* Spell check hint */}
+              <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                Trình duyệt sẽ tự động gạch chân các từ sai chính tả
+              </div>
+              
+              {/* Validation errors display */}
+              {!isValidInput && (
+                <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <h4 className="text-sm font-semibold text-red-800 mb-2">
+                    Vui lòng sửa các lỗi sau:
+                  </h4>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {validationErrors.required && (
+                      <li>• Vui lòng nhập câu cần luyện tập</li>
+                    )}
+                    {validationErrors.format && (
+                      <li>• Chỉ được sử dụng chữ cái tiếng Anh, số và dấu câu cơ bản</li>
+                    )}
+                    {validationErrors.length && (
+                      <li>• Câu phải có độ dài từ 10-500 ký tự</li>
+                    )}
+                    {validationErrors.specialChars && (
+                      <li>• Quá nhiều ký tự đặc biệt (tối đa 5 ký tự)</li>
+                    )}
+                  </ul>
+                </div>
+              )}
             </article>
             <article className="card p-6">
               <div className="flex flex-col items-center space-y-4">
@@ -506,8 +607,14 @@ const PronunciationPractice = ({ page, setPage }) => {
                   {!isRecording ? (
                     <button
                       onClick={startRecording}
-                      className="flex items-center gap-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all">
-                      <Mic size={24} /> Bắt đầu ghi âm
+                      disabled={!isValidInput}
+                      className={`flex items-center gap-3 px-8 py-4 rounded-full font-semibold shadow-lg transition-all ${
+                        !isValidInput
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
+                      }`}>
+                      <Mic size={24} /> 
+                      {!isValidInput ? 'Sửa lỗi để ghi âm' : 'Bắt đầu ghi âm'}
                     </button>
                   ) : (
                     <button
@@ -517,6 +624,16 @@ const PronunciationPractice = ({ page, setPage }) => {
                     </button>
                   )}
                 </div>
+                
+                {/* Validation message for recording */}
+                {!isValidInput && (
+                  <div className="text-center">
+                    <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
+                    Vui lòng sửa các lỗi trong câu nhập trước khi ghi âm
+                    </p>
+                  </div>
+                )}
+                
                 {audioBlob && (
                   <div className="flex flex-wrap justify-center gap-3 pt-4">
                     <button
@@ -525,9 +642,9 @@ const PronunciationPractice = ({ page, setPage }) => {
                       <Play size={18} /> Nghe lại
                     </button>
                     <button
-                      onClick={submitAudio}
-                      disabled={isLoading}
-                      className="btn-primary flex items-center gap-2">
+                      onClick={handleSubmitAudio}
+                      disabled={isLoading || !isValidInput}
+                      className={`btn-primary flex items-center gap-2 ${!isValidInput ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       {isLoading ? (
                         <>
                           <Loader2 className="animate-spin" />
