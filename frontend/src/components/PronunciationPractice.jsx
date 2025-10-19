@@ -9,6 +9,7 @@ import {
   X,
   BookOpen,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
 import axios from "axios";
 import HeaderNav from "./HeaderNav";
@@ -89,6 +90,8 @@ const PronunciationPractice = ({ page, setPage }) => {
   const [practiceHistory, setPracticeHistory] = useState([]);
   // Cập nhật: Thêm state để quản lý audio và modal của lịch sử
   const [historyAudioUrl, setHistoryAudioUrl] = useState(null);
+
+  const mainPracticeAreaRef = useRef(null);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -286,7 +289,14 @@ const PronunciationPractice = ({ page, setPage }) => {
     setHistoryAudioUrl(newAudioUrl);
     setShowResultsModal(true);
   };
-    const renderColoredPracticeTextWithPhonemes = () => {
+  
+  const handlePracticeAgain = (sentence) => {
+    setPracticeText(sentence);
+    reset();
+    mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
+  }
+
+  const renderColoredPracticeTextWithPhonemes = () => {
     const alignment = results.phoneme_alignment || [];
 
     function buildColoredSentence(targetText, advanceOn) {
@@ -431,7 +441,7 @@ const PronunciationPractice = ({ page, setPage }) => {
       />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
-          <section className="md:col-span-2 space-y-6 overflow-y-auto pr-4">
+          <section ref={mainPracticeAreaRef} className="md:col-span-2 space-y-6 overflow-y-auto pr-4 scroll-mt-4">
             <article className="card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">
@@ -552,7 +562,7 @@ const PronunciationPractice = ({ page, setPage }) => {
               <ul className="space-y-3">
                 {practiceHistory.map((item) => (
                   <li key={item.id} className="border-b pb-3 last:border-b-0">
-                    <button
+                    {/* <button
                       onClick={() => handleHistoryItemClick(item)}
                       className="w-full text-left p-2 rounded-md hover:bg-gray-100">
                       <p className="text-sm text-gray-700 truncate">
@@ -570,6 +580,35 @@ const PronunciationPractice = ({ page, setPage }) => {
                         </span>
                       </div>
                     </button>
+                     */}
+                    <div className="p-2 rounded-md">
+                      <p className="text-sm text-gray-700 truncate mb-2">
+                        {item.results.original_sentence}
+                      </p>
+                      <div className="flex justify-between items-center">
+                        <span
+                          className={`text-xs font-bold ${getScoreColor(
+                            item.results.scores.overall
+                          )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}>
+                          {item.results.scores.overall.toFixed(1)}/100
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handlePracticeAgain(item.results.original_sentence)}
+                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-100"
+                            title="Luyện tập lại câu này">
+                            <RefreshCw size={14} />
+                            <span>Luyện lại</span>
+                          </button>
+                          <button
+                            onClick={() => handleHistoryItemClick(item)}
+                            className="text-xs text-gray-600 hover:text-gray-900 font-medium p-1 rounded-md hover:bg-gray-100"
+                            title="Xem chi tiết kết quả">
+                            Chi tiết
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </li>
                 ))}
               </ul>

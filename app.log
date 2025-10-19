@@ -961,3 +961,11 @@ NameError: name 'WordMetrics' is not defined. Did you mean: 'word_metrics'?
 2025-10-14 09:54:05,209 - api_logger - INFO - [6c5686a6] Pronunciation evaluated in 2.8 ms
 2025-10-14 09:54:05,210 - api_logger - INFO - [6c5686a6] Request processed successfully.
 2025-10-14 09:54:05,210 - api_logger - INFO - [6c5686a6] Request processed successfully.
+2025-10-19 10:48:25,491 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 10:48:25,492 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-19 10:48:32,357 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 10:48:32,357 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-19 10:48:34,945 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 10:48:34,945 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 10:48:34,945 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-19 10:48:34,945 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
