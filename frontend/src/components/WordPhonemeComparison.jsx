@@ -60,9 +60,7 @@ const WordPhonemeComparison = ({
           className={`inline-block mr-2 px-2 py-1 border rounded ${bgColor}`}
         >
           <span className="font-mono text-sm">
-            <span className="text-gray-400">/</span>
             <span className="text-gray-700">{phonemeText}</span>
-            <span className="text-gray-400">/</span>
           </span>
         </span>
       );
@@ -72,7 +70,6 @@ const WordPhonemeComparison = ({
     return (
       <span className="inline-block mr-2 px-2 py-1 bg-gray-50 border border-gray-300 rounded">
         <span className="font-mono text-sm">
-          <span className="text-gray-400">/</span>
           {subAlignment.map((char, charIdx) => {
             const charValue = isRef ? char.ref : char.learner;
 
@@ -92,7 +89,6 @@ const WordPhonemeComparison = ({
               </span>
             );
           })}
-          <span className="text-gray-400">/</span>
         </span>
       </span>
     );
