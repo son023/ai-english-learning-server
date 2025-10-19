@@ -969,3 +969,221 @@ NameError: name 'WordMetrics' is not defined. Did you mean: 'word_metrics'?
 2025-10-19 10:48:34,945 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
 2025-10-19 10:48:34,945 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
 2025-10-19 10:48:34,945 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: C:\Program Files\eSpeak NG\libespeak-ng.dll
+2025-10-19 15:45:37,066 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:45:37,066 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:45:41,300 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:45:41,300 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:45:42,958 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:45:42,958 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:45:42,958 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:45:42,958 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:45:44,426 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:45:44,426 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:45:48,110 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:45:48,110 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:50:26,746 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:26,746 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:28,254 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:28,254 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:28,254 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:28,254 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:29,779 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:50:29,779 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:50:34,252 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:50:34,252 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:50:45,053 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:45,053 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:46,562 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:46,562 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:50:46,563 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:46,563 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:50:48,059 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:50:48,059 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:50:51,816 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:50:51,816 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:51:00,834 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:00,834 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:02,355 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:02,355 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:02,355 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:02,355 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:03,844 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:51:03,844 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:51:07,680 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:51:07,680 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:51:20,447 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:20,447 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:21,926 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:21,926 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:51:21,927 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:21,927 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:51:23,452 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:51:23,452 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:51:27,109 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:51:27,109 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:52:37,782 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:52:37,782 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:52:39,291 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:52:39,291 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 15:52:39,292 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:52:39,292 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 15:52:40,772 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:52:40,772 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 15:52:44,872 - api_logger - INFO - Warmup thành công.
+2025-10-19 15:52:44,872 - api_logger - INFO - Warmup thành công.
+2025-10-19 16:02:00,558 - api_logger - INFO - [7aa986fc] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:02:00,558 - api_logger - INFO - [7aa986fc] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:02:04,171 - api_logger - INFO - [7aa986fc] Whisper transcribed in 3613.5 ms
+2025-10-19 16:02:04,171 - api_logger - INFO - [7aa986fc] Whisper transcribed in 3613.5 ms
+2025-10-19 16:02:05,879 - api_logger - INFO - [7aa986fc] Pronunciation evaluated in 1.6 ms
+2025-10-19 16:02:05,879 - api_logger - INFO - [7aa986fc] Pronunciation evaluated in 1.6 ms
+2025-10-19 16:02:05,880 - api_logger - INFO - [7aa986fc] Request processed successfully.
+2025-10-19 16:02:05,880 - api_logger - INFO - [7aa986fc] Request processed successfully.
+2025-10-19 16:07:08,641 - api_logger - INFO - [a4356cfd] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:07:08,641 - api_logger - INFO - [a4356cfd] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:07:10,140 - api_logger - INFO - [a4356cfd] Whisper transcribed in 1498.6 ms
+2025-10-19 16:07:10,140 - api_logger - INFO - [a4356cfd] Whisper transcribed in 1498.6 ms
+2025-10-19 16:07:11,400 - api_logger - INFO - [a4356cfd] Pronunciation evaluated in 1.5 ms
+2025-10-19 16:07:11,400 - api_logger - INFO - [a4356cfd] Pronunciation evaluated in 1.5 ms
+2025-10-19 16:07:11,401 - api_logger - INFO - [a4356cfd] Request processed successfully.
+2025-10-19 16:07:11,401 - api_logger - INFO - [a4356cfd] Request processed successfully.
+2025-10-19 16:10:49,659 - api_logger - INFO - [7038167d] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:10:49,659 - api_logger - INFO - [7038167d] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:10:51,433 - api_logger - INFO - [7038167d] Whisper transcribed in 1772.5 ms
+2025-10-19 16:10:51,433 - api_logger - INFO - [7038167d] Whisper transcribed in 1772.5 ms
+2025-10-19 16:10:52,913 - api_logger - INFO - [7038167d] Pronunciation evaluated in 2.1 ms
+2025-10-19 16:10:52,913 - api_logger - INFO - [7038167d] Pronunciation evaluated in 2.1 ms
+2025-10-19 16:10:52,914 - api_logger - INFO - [7038167d] Request processed successfully.
+2025-10-19 16:10:52,914 - api_logger - INFO - [7038167d] Request processed successfully.
+2025-10-19 16:11:47,778 - api_logger - INFO - [2ef7c54b] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:11:47,778 - api_logger - INFO - [2ef7c54b] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:11:49,284 - api_logger - INFO - [2ef7c54b] Whisper transcribed in 1503.9 ms
+2025-10-19 16:11:49,284 - api_logger - INFO - [2ef7c54b] Whisper transcribed in 1503.9 ms
+2025-10-19 16:11:50,939 - api_logger - INFO - [2ef7c54b] Pronunciation evaluated in 1.9 ms
+2025-10-19 16:11:50,939 - api_logger - INFO - [2ef7c54b] Pronunciation evaluated in 1.9 ms
+2025-10-19 16:11:50,939 - api_logger - INFO - [2ef7c54b] Request processed successfully.
+2025-10-19 16:11:50,939 - api_logger - INFO - [2ef7c54b] Request processed successfully.
+2025-10-19 16:57:47,367 - api_logger - INFO - [1a78069b] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:57:47,367 - api_logger - INFO - [1a78069b] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:57:49,146 - api_logger - INFO - [1a78069b] Whisper transcribed in 1777.7 ms
+2025-10-19 16:57:49,146 - api_logger - INFO - [1a78069b] Whisper transcribed in 1777.7 ms
+2025-10-19 16:57:50,525 - api_logger - INFO - [1a78069b] Pronunciation evaluated in 2.6 ms
+2025-10-19 16:57:50,525 - api_logger - INFO - [1a78069b] Pronunciation evaluated in 2.6 ms
+2025-10-19 16:57:50,526 - api_logger - INFO - [1a78069b] Request processed successfully.
+2025-10-19 16:57:50,526 - api_logger - INFO - [1a78069b] Request processed successfully.
+2025-10-19 16:58:02,425 - api_logger - INFO - [a1b7b879] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:58:02,425 - api_logger - INFO - [a1b7b879] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:58:03,811 - api_logger - INFO - [a1b7b879] Whisper transcribed in 1385.1 ms
+2025-10-19 16:58:03,811 - api_logger - INFO - [a1b7b879] Whisper transcribed in 1385.1 ms
+2025-10-19 16:58:05,045 - api_logger - INFO - [a1b7b879] Pronunciation evaluated in 2.0 ms
+2025-10-19 16:58:05,045 - api_logger - INFO - [a1b7b879] Pronunciation evaluated in 2.0 ms
+2025-10-19 16:58:05,045 - api_logger - INFO - [a1b7b879] Request processed successfully.
+2025-10-19 16:58:05,045 - api_logger - INFO - [a1b7b879] Request processed successfully.
+2025-10-19 16:58:53,002 - api_logger - INFO - [7dcd7041] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:58:53,002 - api_logger - INFO - [7dcd7041] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:58:54,870 - api_logger - INFO - [7dcd7041] Whisper transcribed in 1867.5 ms
+2025-10-19 16:58:54,870 - api_logger - INFO - [7dcd7041] Whisper transcribed in 1867.5 ms
+2025-10-19 16:58:56,255 - api_logger - INFO - [7dcd7041] Pronunciation evaluated in 3.2 ms
+2025-10-19 16:58:56,255 - api_logger - INFO - [7dcd7041] Pronunciation evaluated in 3.2 ms
+2025-10-19 16:58:56,256 - api_logger - INFO - [7dcd7041] Request processed successfully.
+2025-10-19 16:58:56,256 - api_logger - INFO - [7dcd7041] Request processed successfully.
+2025-10-19 16:59:32,645 - api_logger - INFO - [8054a6cd] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:59:32,645 - api_logger - INFO - [8054a6cd] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 16:59:34,584 - api_logger - INFO - [8054a6cd] Whisper transcribed in 1937.8 ms
+2025-10-19 16:59:34,584 - api_logger - INFO - [8054a6cd] Whisper transcribed in 1937.8 ms
+2025-10-19 16:59:35,929 - api_logger - INFO - [8054a6cd] Pronunciation evaluated in 3.7 ms
+2025-10-19 16:59:35,929 - api_logger - INFO - [8054a6cd] Pronunciation evaluated in 3.7 ms
+2025-10-19 16:59:35,930 - api_logger - INFO - [8054a6cd] Request processed successfully.
+2025-10-19 16:59:35,930 - api_logger - INFO - [8054a6cd] Request processed successfully.
+2025-10-19 17:00:14,963 - api_logger - INFO - [8a90afba] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 17:00:14,963 - api_logger - INFO - [8a90afba] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 17:00:16,809 - api_logger - INFO - [8a90afba] Whisper transcribed in 1844.6 ms
+2025-10-19 17:00:16,809 - api_logger - INFO - [8a90afba] Whisper transcribed in 1844.6 ms
+2025-10-19 17:00:18,187 - api_logger - INFO - [8a90afba] Pronunciation evaluated in 3.8 ms
+2025-10-19 17:00:18,187 - api_logger - INFO - [8a90afba] Pronunciation evaluated in 3.8 ms
+2025-10-19 17:00:18,188 - api_logger - INFO - [8a90afba] Request processed successfully.
+2025-10-19 17:00:18,188 - api_logger - INFO - [8a90afba] Request processed successfully.
+2025-10-19 17:42:58,351 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:42:58,351 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:42:59,783 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:42:59,783 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:42:59,783 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:42:59,783 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:43:01,204 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 17:43:01,204 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 17:43:04,865 - api_logger - INFO - Warmup thành công.
+2025-10-19 17:43:04,865 - api_logger - INFO - Warmup thành công.
+2025-10-19 17:45:01,689 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:45:01,689 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:45:03,132 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:45:03,132 - api_logger - INFO - --- Ứng dụng FastAPI bắt đầu khởi động ---
+2025-10-19 17:45:03,132 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:45:03,132 - api_logger - INFO - Đã thiết lập thư viện espeak-ng thành công tại: /opt/homebrew/bin/espeak-ng
+2025-10-19 17:45:04,570 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 17:45:04,570 - api_logger - INFO - Bắt đầu quá trình warmup...
+2025-10-19 17:45:08,961 - api_logger - INFO - Warmup thành công.
+2025-10-19 17:45:08,961 - api_logger - INFO - Warmup thành công.
+2025-10-19 18:39:39,828 - api_logger - INFO - [e0183f26] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:39:39,828 - api_logger - INFO - [e0183f26] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:39:41,822 - api_logger - INFO - [e0183f26] Whisper transcribed in 1993.3 ms
+2025-10-19 18:39:41,822 - api_logger - INFO - [e0183f26] Whisper transcribed in 1993.3 ms
+2025-10-19 18:39:43,366 - api_logger - INFO - [e0183f26] Pronunciation evaluated in 1.8 ms
+2025-10-19 18:39:43,366 - api_logger - INFO - [e0183f26] Pronunciation evaluated in 1.8 ms
+2025-10-19 18:39:43,367 - api_logger - INFO - [e0183f26] Request processed successfully.
+2025-10-19 18:39:43,367 - api_logger - INFO - [e0183f26] Request processed successfully.
+2025-10-19 18:41:20,369 - api_logger - INFO - [8697661e] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:41:20,369 - api_logger - INFO - [8697661e] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:41:21,806 - api_logger - INFO - [8697661e] Whisper transcribed in 1436.8 ms
+2025-10-19 18:41:21,806 - api_logger - INFO - [8697661e] Whisper transcribed in 1436.8 ms
+2025-10-19 18:41:23,451 - api_logger - INFO - [8697661e] Pronunciation evaluated in 1.9 ms
+2025-10-19 18:41:23,451 - api_logger - INFO - [8697661e] Pronunciation evaluated in 1.9 ms
+2025-10-19 18:41:23,452 - api_logger - INFO - [8697661e] Request processed successfully.
+2025-10-19 18:41:23,452 - api_logger - INFO - [8697661e] Request processed successfully.
+2025-10-19 18:41:44,564 - api_logger - INFO - [be91b134] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:41:44,564 - api_logger - INFO - [be91b134] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:41:46,133 - api_logger - INFO - [be91b134] Whisper transcribed in 1568.2 ms
+2025-10-19 18:41:46,133 - api_logger - INFO - [be91b134] Whisper transcribed in 1568.2 ms
+2025-10-19 18:41:47,447 - api_logger - INFO - [be91b134] Pronunciation evaluated in 2.6 ms
+2025-10-19 18:41:47,447 - api_logger - INFO - [be91b134] Pronunciation evaluated in 2.6 ms
+2025-10-19 18:41:47,447 - api_logger - INFO - [be91b134] Request processed successfully.
+2025-10-19 18:41:47,447 - api_logger - INFO - [be91b134] Request processed successfully.
+2025-10-19 18:46:31,016 - api_logger - INFO - [936c46eb] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:46:31,016 - api_logger - INFO - [936c46eb] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 18:46:32,499 - api_logger - INFO - [936c46eb] Whisper transcribed in 1481.3 ms
+2025-10-19 18:46:32,499 - api_logger - INFO - [936c46eb] Whisper transcribed in 1481.3 ms
+2025-10-19 18:46:33,975 - api_logger - INFO - [936c46eb] Pronunciation evaluated in 2.1 ms
+2025-10-19 18:46:33,975 - api_logger - INFO - [936c46eb] Pronunciation evaluated in 2.1 ms
+2025-10-19 18:46:33,976 - api_logger - INFO - [936c46eb] Request processed successfully.
+2025-10-19 18:46:33,976 - api_logger - INFO - [936c46eb] Request processed successfully.
+2025-10-19 19:02:29,631 - api_logger - INFO - [69bf32df] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:02:29,631 - api_logger - INFO - [69bf32df] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:02:31,084 - api_logger - INFO - [69bf32df] Whisper transcribed in 1452.8 ms
+2025-10-19 19:02:31,084 - api_logger - INFO - [69bf32df] Whisper transcribed in 1452.8 ms
+2025-10-19 19:02:32,343 - api_logger - INFO - [69bf32df] Pronunciation evaluated in 1.0 ms
+2025-10-19 19:02:32,343 - api_logger - INFO - [69bf32df] Pronunciation evaluated in 1.0 ms
+2025-10-19 19:02:32,344 - api_logger - INFO - [69bf32df] Request processed successfully.
+2025-10-19 19:02:32,344 - api_logger - INFO - [69bf32df] Request processed successfully.
+2025-10-19 19:03:08,539 - api_logger - INFO - [387df363] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:03:08,539 - api_logger - INFO - [387df363] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:03:10,059 - api_logger - INFO - [387df363] Whisper transcribed in 1519.9 ms
+2025-10-19 19:03:10,059 - api_logger - INFO - [387df363] Whisper transcribed in 1519.9 ms
+2025-10-19 19:03:11,481 - api_logger - INFO - [387df363] Pronunciation evaluated in 1.7 ms
+2025-10-19 19:03:11,481 - api_logger - INFO - [387df363] Pronunciation evaluated in 1.7 ms
+2025-10-19 19:03:11,482 - api_logger - INFO - [387df363] Request processed successfully.
+2025-10-19 19:03:11,482 - api_logger - INFO - [387df363] Request processed successfully.
+2025-10-19 19:07:26,860 - api_logger - INFO - [4a05fe3a] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:07:26,860 - api_logger - INFO - [4a05fe3a] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:07:28,247 - api_logger - INFO - [4a05fe3a] Whisper transcribed in 1386.3 ms
+2025-10-19 19:07:28,247 - api_logger - INFO - [4a05fe3a] Whisper transcribed in 1386.3 ms
+2025-10-19 19:07:29,561 - api_logger - INFO - [4a05fe3a] Pronunciation evaluated in 1.4 ms
+2025-10-19 19:07:29,561 - api_logger - INFO - [4a05fe3a] Pronunciation evaluated in 1.4 ms
+2025-10-19 19:07:29,562 - api_logger - INFO - [4a05fe3a] Request processed successfully.
+2025-10-19 19:07:29,562 - api_logger - INFO - [4a05fe3a] Request processed successfully.
+2025-10-19 19:28:18,534 - api_logger - INFO - [fc30f56a] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:28:18,534 - api_logger - INFO - [fc30f56a] Received request for: 'Hello everyone, welcome to our English pronunciation practice session today.'
+2025-10-19 19:28:20,000 - api_logger - INFO - [fc30f56a] Whisper transcribed in 1465.9 ms
+2025-10-19 19:28:20,000 - api_logger - INFO - [fc30f56a] Whisper transcribed in 1465.9 ms
+2025-10-19 19:28:21,490 - api_logger - INFO - [fc30f56a] Pronunciation evaluated in 1.7 ms
+2025-10-19 19:28:21,490 - api_logger - INFO - [fc30f56a] Pronunciation evaluated in 1.7 ms
+2025-10-19 19:28:21,491 - api_logger - INFO - [fc30f56a] Request processed successfully.
+2025-10-19 19:28:21,491 - api_logger - INFO - [fc30f56a] Request processed successfully.

@@ -4,11 +4,13 @@ from typing import List, Tuple, Dict, Any
 import time
 import logging
 import math
+import numpy as np
 from fastapi import HTTPException
 from phonemizer import phonemize
 from phonemizer.separator import Separator
 import os
 from jiwer import wer
+from dtwalign import dtw_from_distance_matrix
 from .word_matching import get_best_mapped_words_dtw
 from .word_metrics import edit_distance_python as wm_edit_distance
 from models import (
@@ -17,7 +19,7 @@ from models import (
     WordAccuracyData,
     AlignmentItem,
     SubAlignment,
-    PhoneticPronunciationResponse
+    PhoneticPronunciationResponse,
 )
 
 
@@ -137,82 +139,131 @@ class PronunciationService:
 
         return scores, phoneme_errors, wer_score, word_accuracy
 
-    def _align_sequences(self, ref_seq: List[str], learner_seq: List[str]) -> List[AlignmentItem]:
-        # Implementation không đổi...
-        m, n = len(ref_seq), len(learner_seq)
-        match_score, mismatch_penalty, gap_penalty = 2, -1, -1
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        back = [[None] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            dp[i][0] = i * gap_penalty; back[i][0] = "up"
-        for j in range(1, n + 1):
-            dp[0][j] = j * gap_penalty; back[0][j] = "left"
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                match = dp[i-1][j-1] + (match_score if ref_seq[i-1] == learner_seq[j-1] else mismatch_penalty)
-                delete = dp[i-1][j] + gap_penalty
-                insert = dp[i][j-1] + gap_penalty
-                best = max(match, delete, insert)
-                dp[i][j] = best
-                if best == delete: back[i][j] = "up"
-                elif best == insert: back[i][j] = "left"
-                else: back[i][j] = "diag"
-        i, j = m, n
+    def _align_sequences(
+        self, ref_seq: List[str], learner_seq: List[str]
+    ) -> List[AlignmentItem]:
+        """Align phoneme sequences using DTW algorithm"""
+        if not ref_seq and not learner_seq:
+            return []
+        if not ref_seq:
+            return [self._build_alignment_item(None, l, False) for l in learner_seq]
+        if not learner_seq:
+            return [self._build_alignment_item(r, None, False) for r in ref_seq]
+
+        # Tạo distance matrix (learner x ref)
+        m, n = len(learner_seq), len(ref_seq)
+        distance_matrix = np.zeros((m, n))
+        for i in range(m):
+            for j in range(n):
+                # Distance = 0 nếu match, 1 nếu mismatch
+                distance_matrix[i, j] = 0.0 if learner_seq[i] == ref_seq[j] else 1.0
+
+        # Chạy DTW
+        dtw_result = dtw_from_distance_matrix(distance_matrix)
+
+        # Parse alignment path
         aligned: List[AlignmentItem] = []
-        while i > 0 or j > 0:
-            direction = back[i][j]
-            if direction == "diag":
-                ref_val, learner_val = ref_seq[i-1], learner_seq[j-1]
-                aligned.append(self._build_alignment_item(ref_val, learner_val, ref_val == learner_val))
-                i -= 1; j -= 1
-            elif direction == "up":
-                aligned.append(self._build_alignment_item(ref_seq[i-1], None, False)); i -= 1
-            else:
-                aligned.append(self._build_alignment_item(None, learner_seq[j-1], False)); j -= 1
-        aligned.reverse()
+        path = (
+            dtw_result.path
+        )  # shape: [path_length, 2], columns: [learner_idx, ref_idx]
+
+        for i in range(len(path)):
+            learner_idx, ref_idx = path[i]
+
+            # Kiểm tra nếu là valid index
+            if learner_idx < len(learner_seq) and ref_idx < len(ref_seq):
+                # Match/mismatch
+                ref_val = ref_seq[ref_idx]
+                learner_val = learner_seq[learner_idx]
+                is_match = ref_val == learner_val
+                aligned.append(
+                    self._build_alignment_item(ref_val, learner_val, is_match)
+                )
+            elif learner_idx >= len(learner_seq) and ref_idx < len(ref_seq):
+                # Deletion (missing in learner)
+                aligned.append(
+                    self._build_alignment_item(ref_seq[ref_idx], None, False)
+                )
+            elif learner_idx < len(learner_seq) and ref_idx >= len(ref_seq):
+                # Insertion (extra in learner)
+                aligned.append(
+                    self._build_alignment_item(None, learner_seq[learner_idx], False)
+                )
+
         return aligned
 
-    def _build_alignment_item(self, ref_val: str | None, learner_val: str | None, is_match: bool) -> AlignmentItem:
+    def _build_alignment_item(
+        self, ref_val: str | None, learner_val: str | None, is_match: bool
+    ) -> AlignmentItem:
         # Implementation không đổi...
         sub_alignment: List[SubAlignment] = []
         if not is_match:
             ref_chars, learner_chars = list(ref_val or ""), list(learner_val or "")
             sub_alignment = self._align_chars(ref_chars, learner_chars)
-        return AlignmentItem(ref=ref_val, learner=learner_val, is_match=is_match and (ref_val is not None and learner_val is not None), sub_alignment=sub_alignment)
+        return AlignmentItem(
+            ref=ref_val,
+            learner=learner_val,
+            is_match=is_match and (ref_val is not None and learner_val is not None),
+            sub_alignment=sub_alignment,
+        )
 
-    def _align_chars(self, ref_chars: List[str], learner_chars: List[str]) -> List[SubAlignment]:
-        # Implementation không đổi...
-        m, n = len(ref_chars), len(learner_chars)
-        match_score, mismatch_penalty, gap_penalty = 2, -1, -1
-        dp = [[0] * (n + 1) for _ in range(m + 1)]
-        back = [[None] * (n + 1) for _ in range(m + 1)]
-        for i in range(1, m + 1):
-            dp[i][0] = i * gap_penalty; back[i][0] = "up"
-        for j in range(1, n + 1):
-            dp[0][j] = j * gap_penalty; back[0][j] = "left"
-        for i in range(1, m + 1):
-            for j in range(1, n + 1):
-                match = dp[i-1][j-1] + (match_score if ref_chars[i-1] == learner_chars[j-1] else mismatch_penalty)
-                delete = dp[i-1][j] + gap_penalty
-                insert = dp[i][j-1] + gap_penalty
-                best = max(match, delete, insert)
-                dp[i][j] = best
-                if best == delete: back[i][j] = "up"
-                elif best == insert: back[i][j] = "left"
-                else: back[i][j] = "diag"
-        i, j = m, n
+    def _align_chars(
+        self, ref_chars: List[str], learner_chars: List[str]
+    ) -> List[SubAlignment]:
+        """Align characters using DTW algorithm"""
+        if not ref_chars and not learner_chars:
+            return []
+        if not ref_chars:
+            return [
+                SubAlignment(ref=None, learner=l, is_match=False) for l in learner_chars
+            ]
+        if not learner_chars:
+            return [
+                SubAlignment(ref=r, learner=None, is_match=False) for r in ref_chars
+            ]
+
+        # Tạo distance matrix (learner x ref)
+        m, n = len(learner_chars), len(ref_chars)
+        distance_matrix = np.zeros((m, n))
+        for i in range(m):
+            for j in range(n):
+                # Distance = 0 nếu match, 1 nếu mismatch
+                distance_matrix[i, j] = 0.0 if learner_chars[i] == ref_chars[j] else 1.0
+
+        # Chạy DTW
+        dtw_result = dtw_from_distance_matrix(distance_matrix)
+
+        # Parse alignment path
         aligned: List[SubAlignment] = []
-        while i > 0 or j > 0:
-            direction = back[i][j]
-            if direction == "diag":
-                r, l = ref_chars[i-1], learner_chars[j-1]
-                aligned.append(SubAlignment(ref=r, learner=l, is_match=(r == l)))
-                i -= 1; j -= 1
-            elif direction == "up":
-                aligned.append(SubAlignment(ref=ref_chars[i-1], learner=None, is_match=False)); i -= 1
-            else:
-                aligned.append(SubAlignment(ref=None, learner=learner_chars[j-1], is_match=False)); j -= 1
-        aligned.reverse()
+        path = (
+            dtw_result.path
+        )  # shape: [path_length, 2], columns: [learner_idx, ref_idx]
+
+        for i in range(len(path)):
+            learner_idx, ref_idx = path[i]
+
+            # Kiểm tra nếu là valid index
+            if learner_idx < len(learner_chars) and ref_idx < len(ref_chars):
+                # Match/mismatch
+                ref_val = ref_chars[ref_idx]
+                learner_val = learner_chars[learner_idx]
+                is_match = ref_val == learner_val
+                aligned.append(
+                    SubAlignment(ref=ref_val, learner=learner_val, is_match=is_match)
+                )
+            elif learner_idx >= len(learner_chars) and ref_idx < len(ref_chars):
+                # Deletion (missing in learner)
+                aligned.append(
+                    SubAlignment(ref=ref_chars[ref_idx], learner=None, is_match=False)
+                )
+            elif learner_idx < len(learner_chars) and ref_idx >= len(ref_chars):
+                # Insertion (extra in learner)
+                aligned.append(
+                    SubAlignment(
+                        ref=None, learner=learner_chars[learner_idx], is_match=False
+                    )
+                )
+
         return aligned
 
     def process_phonetic_evaluation(self, request, whisper_service, llm_service):
