@@ -279,7 +279,7 @@ const PronunciationPractice = ({ page, setPage }) => {
       alert("Câu nhập sai chính tả hoặc không hợp lệ! Vui lòng kiểm tra lại.");
       return;
     }
-    
+
     await submitAudio();
   };
 
@@ -357,7 +357,7 @@ const PronunciationPractice = ({ page, setPage }) => {
     setHistoryAudioUrl(newAudioUrl);
     setShowResultsModal(true);
   };
-
+  
   const handlePracticeAgain = (sentence) => {
     setPracticeText(sentence);
     reset();
