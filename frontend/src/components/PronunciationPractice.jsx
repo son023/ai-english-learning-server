@@ -274,7 +274,7 @@ const PronunciationPractice = ({ page, setPage }) => {
 
   const handleSubmitAudio = async () => {
     if (!audioBlob) return;
-
+    
     if (!isValidInput || !isValidFormat(practiceText)) {
       alert("Câu nhập sai chính tả hoặc không hợp lệ! Vui lòng kiểm tra lại.");
       return;
@@ -645,7 +645,7 @@ const PronunciationPractice = ({ page, setPage }) => {
                     </p>
                   </div>
                 )}
-                
+
                 {audioBlob && (
                   <div className="flex flex-wrap justify-center gap-3 pt-4">
                     <button
