@@ -61,14 +61,12 @@ const getAllDataFromDB = (db) => {
 const PhonemeTooltip = ({ word, phoneme, onClose }) => (
   <div
     className="absolute bottom-full mb-2 w-max max-w-xs bg-gray-800 text-white text-sm rounded-lg py-2 px-4 shadow-lg z-20"
-    onClick={(e) => e.stopPropagation()}
-  >
+    onClick={(e) => e.stopPropagation()}>
     <span className="font-bold">{word}:</span>{" "}
     <span className="italic">/{phoneme}/</span>
     <button
       onClick={onClose}
-      className="absolute -top-1 -right-1 p-1 text-gray-400 hover:text-white bg-gray-700 rounded-full w-5 h-5 flex items-center justify-center"
-    >
+      className="absolute -top-1 -right-1 p-1 text-gray-400 hover:text-white bg-gray-700 rounded-full w-5 h-5 flex items-center justify-center">
       &times;
     </button>
   </div>
@@ -144,7 +142,7 @@ const PronunciationPractice = ({ page, setPage }) => {
 
   const isValidFormat = (text) => {
     const errors = validateInput(text);
-    return !Object.values(errors).some((error) => error);
+    return !Object.values(errors).some(error => error);
   };
 
   // Khởi tạo DB khi component mount
@@ -200,7 +198,7 @@ const PronunciationPractice = ({ page, setPage }) => {
   useEffect(() => {
     const errors = validateInput(practiceText);
     setValidationErrors(errors);
-    setIsValidInput(!Object.values(errors).some((error) => error));
+    setIsValidInput(!Object.values(errors).some(error => error));
   }, [practiceText]);
 
   const saveToHistory = async (newResults, newAudioBlob) => {
@@ -364,7 +362,7 @@ const PronunciationPractice = ({ page, setPage }) => {
     setPracticeText(sentence);
     reset();
     mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }
 
   const renderColoredPracticeTextWithPhonemes = () => {
     const refPhonemes = results.reference_phonemes || [];
@@ -515,8 +513,7 @@ const PronunciationPractice = ({ page, setPage }) => {
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100"
-      onClick={() => setTooltipData(null)}
-    >
+      onClick={() => setTooltipData(null)}>
       <HeaderNav
         title="AI English Pronunciation Practice"
         page={page}
@@ -524,10 +521,7 @@ const PronunciationPractice = ({ page, setPage }) => {
       />
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
-          <section
-            ref={mainPracticeAreaRef}
-            className="md:col-span-2 space-y-6 overflow-y-auto pr-4 scroll-mt-4"
-          >
+          <section ref={mainPracticeAreaRef} className="md:col-span-2 space-y-6 overflow-y-auto pr-4 scroll-mt-4">
             <article className="card p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">
@@ -535,8 +529,7 @@ const PronunciationPractice = ({ page, setPage }) => {
                 </h2>
                 <button
                   onClick={() => playTextToSpeech(practiceText)}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
-                >
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700">
                   <Volume2 size={20} />{" "}
                   <span className="text-sm">Nghe cả câu</span>
                 </button>
@@ -553,16 +546,14 @@ const PronunciationPractice = ({ page, setPage }) => {
                       <span
                         key={index}
                         className="relative"
-                        onClick={(e) => e.stopPropagation()}
-                      >
+                        onClick={(e) => e.stopPropagation()}>
                         <span
                           onClick={() => handleWordClick(word, phoneme, index)}
                           className={
                             phoneme
                               ? "cursor-pointer hover:bg-blue-100 rounded p-1 transition-colors"
                               : ""
-                          }
-                        >
+                          }>
                           {word}
                         </span>
                         {tooltipData && tooltipData.index === index && (
@@ -585,18 +576,20 @@ const PronunciationPractice = ({ page, setPage }) => {
                   reset();
                 }}
                 className={`w-full p-4 border rounded-lg ${
-                  !isValidInput ? "border-red-300 bg-red-50" : "border-gray-300"
+                  !isValidInput 
+                    ? 'border-red-300 bg-red-50' 
+                    : 'border-gray-300'
                 }`}
                 rows="4"
                 placeholder="Nhập câu bạn muốn luyện tập... (10-500 ký tự, chỉ tiếng Anh)"
                 spellCheck={true}
               />
-
+              
               {/* Spell check hint */}
               <div className="mt-1 text-xs text-gray-500 flex items-center gap-1">
                 Trình duyệt sẽ tự động gạch chân các từ sai chính tả
               </div>
-
+              
               {/* Validation errors display */}
               {!isValidInput && (
                 <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -608,10 +601,7 @@ const PronunciationPractice = ({ page, setPage }) => {
                       <li>• Vui lòng nhập câu cần luyện tập</li>
                     )}
                     {validationErrors.format && (
-                      <li>
-                        • Chỉ được sử dụng chữ cái tiếng Anh, số và dấu câu cơ
-                        bản
-                      </li>
+                      <li>• Chỉ được sử dụng chữ cái tiếng Anh, số và dấu câu cơ bản</li>
                     )}
                     {validationErrors.length && (
                       <li>• Câu phải có độ dài từ 10-500 ký tự</li>
@@ -632,28 +622,26 @@ const PronunciationPractice = ({ page, setPage }) => {
                       disabled={!isValidInput}
                       className={`flex items-center gap-3 px-8 py-4 rounded-full font-semibold shadow-lg transition-all ${
                         !isValidInput
-                          ? "bg-gray-400 text-gray-600 cursor-not-allowed opacity-50"
-                          : "bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105"
-                      }`}
-                    >
-                      <Mic size={24} />
-                      {!isValidInput ? "Sửa lỗi để ghi âm" : "Bắt đầu ghi âm"}
+                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
+                    }`}>
+                    <Mic size={24} /> 
+                    {!isValidInput ? 'Sửa lỗi để ghi âm' : 'Bắt đầu ghi âm'}
                     </button>
                   ) : (
                     <button
                       onClick={stopRecording}
-                      className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-pink-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all animate-pulse-slow"
-                    >
+                      className="flex items-center gap-3 bg-gradient-to-r from-red-500 to-pink-600 text-white px-8 py-4 rounded-full font-semibold shadow-lg hover:from-red-600 hover:to-pink-700 transform hover:scale-105 transition-all animate-pulse-slow">
                       <MicOff size={24} /> Dừng ghi âm
                     </button>
                   )}
                 </div>
-
+                
                 {/* Validation message for recording */}
                 {!isValidInput && (
                   <div className="text-center">
                     <p className="text-sm text-red-600 bg-red-50 px-4 py-2 rounded-lg border border-red-200">
-                      Vui lòng sửa các lỗi trong câu nhập trước khi ghi âm
+                    Vui lòng sửa các lỗi trong câu nhập trước khi ghi âm
                     </p>
                   </div>
                 )}
@@ -662,17 +650,13 @@ const PronunciationPractice = ({ page, setPage }) => {
                   <div className="flex flex-wrap justify-center gap-3 pt-4">
                     <button
                       onClick={playRecordedAudio}
-                      className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all"
-                    >
+                      className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-4 py-2 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all">
                       <Play size={18} /> Nghe lại
                     </button>
                     <button
                       onClick={handleSubmitAudio}
                       disabled={isLoading || !isValidInput}
-                      className={`btn-primary flex items-center gap-2 ${
-                        !isValidInput ? "opacity-50 cursor-not-allowed" : ""
-                      }`}
-                    >
+                      className={`btn-primary flex items-center gap-2 ${!isValidInput ? 'opacity-50 cursor-not-allowed' : ''}`}>
                       {isLoading ? (
                         <>
                           <Loader2 className="animate-spin" />
@@ -686,8 +670,7 @@ const PronunciationPractice = ({ page, setPage }) => {
                     </button>
                     <button
                       onClick={reset}
-                      className="btn-secondary flex items-center gap-2"
-                    >
+                      className="btn-secondary flex items-center gap-2">
                       <RotateCcw size={18} /> Thử lại
                     </button>
                   </div>
@@ -735,28 +718,21 @@ const PronunciationPractice = ({ page, setPage }) => {
                         <span
                           className={`text-xs font-bold ${getScoreColor(
                             item.results.scores.overall
-                          )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}
-                        >
+                          )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}>
                           {item.results.scores.overall.toFixed(1)}/100
                         </span>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() =>
-                              handlePracticeAgain(
-                                item.results.original_sentence
-                              )
-                            }
+                            onClick={() => handlePracticeAgain(item.results.original_sentence)}
                             className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-100"
-                            title="Luyện tập lại câu này"
-                          >
+                            title="Luyện tập lại câu này">
                             <RefreshCw size={14} />
                             <span>Luyện lại</span>
                           </button>
                           <button
                             onClick={() => handleHistoryItemClick(item)}
                             className="text-xs text-gray-600 hover:text-gray-900 font-medium p-1 rounded-md hover:bg-gray-100"
-                            title="Xem chi tiết kết quả"
-                          >
+                            title="Xem chi tiết kết quả">
                             Chi tiết
                           </button>
                         </div>
