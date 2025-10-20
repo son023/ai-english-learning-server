@@ -151,10 +151,24 @@ const WordPhonemeComparison = ({
               const refLength = item.ref ? item.ref.length : 0;
 
               // Nếu không có learner → hiển thị dấu gạch dưới
-              if (!item.learner || !item.ref) {
+              if (!item.learner) {
                 return (
                   <React.Fragment key={`learner-missing-${index}`}>
                     {renderPhoneme(null, null, false, false, refLength)}
+                  </React.Fragment>
+                );
+              }
+
+              if (!item.ref) {
+                return (
+                  <React.Fragment key={`learner-${index}`}>
+                    {renderPhoneme(
+                      item.learner,
+                      null,
+                      false,
+                      false,
+                      refLength
+                    )}
                   </React.Fragment>
                 );
               }

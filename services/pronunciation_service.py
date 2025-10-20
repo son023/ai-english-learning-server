@@ -1,5 +1,4 @@
 import difflib
-import string
 from typing import List, Tuple, Dict, Any
 import time
 import logging
@@ -19,9 +18,9 @@ from models import (
     WordAccuracyData,
     AlignmentItem,
     SubAlignment,
-    PhoneticPronunciationResponse,
+    PhoneticPronunciationResponse
 )
-from difflib import SequenceMatcher
+
 
 class PronunciationService:
 
@@ -142,10 +141,7 @@ class PronunciationService:
     def _align_sequences_dtw_patched(
         self, ref_seq: List[str], learner_seq: List[str]
     ) -> List[AlignmentItem]:
-        """
-        Sử dụng DTW để tìm đường đi, sau đó hậu xử lý để xác định các cặp ghép không hợp lệ
-        dựa trên ngưỡng khoảng cách Levenshtein.
-        """
+        
         if not ref_seq and not learner_seq:
             return []
         if not ref_seq:
@@ -153,74 +149,36 @@ class PronunciationService:
         if not learner_seq:
             return [self._build_alignment_item(r, None, False) for r in ref_seq]
 
-        # --- Bước 1: Tính ma trận khoảng cách Levenshtein đã chuẩn hóa ---
-        m, n = len(learner_seq), len(ref_seq)
-        distance_matrix = np.zeros((m, n))
-        for i in range(m):
-            for j in range(n):
-                # Sử dụng hàm edit distance có sẵn của bạn
-                dist = wm_edit_distance(learner_seq[i], ref_seq[j])
-                # Chuẩn hóa khoảng cách về khoảng [0, 1]
-                max_len = max(len(learner_seq[i]), len(ref_seq[j]), 1)
-                distance_matrix[i, j] = dist / max_len
-
-        # --- Bước 2: Chạy DTW như cũ ---
-        # Lưu ý: dtw_from_distance_matrix tìm đường đi tối thiểu hóa chi phí,
-        # nên ma trận khoảng cách của chúng ta là phù hợp.
-        dtw_result = dtw_from_distance_matrix(distance_matrix)
-        path = dtw_result.path
-
-        # --- Bước 3 & 4: Hậu xử lý và tổng hợp kết quả ---
-        # Đặt ngưỡng, nếu khoảng cách > ngưỡng -> cặp ghép không hợp lệ
-        THRESHOLD = 0.6  
-
-        ref_mapped = [False] * n
-        learner_mapped = [False] * m
-        good_alignments = []
-
-        # Tìm các cặp ghép "tốt" (dưới ngưỡng)
-        for learner_idx, ref_idx in path:
-            # Chỉ xử lý các cặp chưa được khớp để tránh trùng lặp
-            if not learner_mapped[learner_idx] and not ref_mapped[ref_idx]:
-                if distance_matrix[learner_idx, ref_idx] < THRESHOLD:
-                    ref_mapped[ref_idx] = True
-                    learner_mapped[learner_idx] = True
-                    is_match = ref_seq[ref_idx] == learner_seq[learner_idx]
-                    good_alignments.append(
-                        self._build_alignment_item(ref_seq[ref_idx], learner_seq[learner_idx], is_match)
-                    )
-
-        # Xây dựng kết quả cuối cùng
         final_alignment: List[AlignmentItem] = []
-        ref_ptr, learner_ptr = 0, 0
         
-        # Sử dụng SequenceMatcher để hợp nhất các phần đã được xử lý (khớp, thừa, thiếu)
-        # thành một chuỗi duy nhất.
-        sm = SequenceMatcher(None, ref_seq, learner_seq)
+        sm = difflib.SequenceMatcher(None, ref_seq, learner_seq, autojunk=False)
         
         for tag, i1, i2, j1, j2 in sm.get_opcodes():
-            if tag == 'equal': # Khớp hoàn toàn
+            if tag == 'equal':  # Các từ khớp hoàn toàn
                 for i in range(i2 - i1):
-                    final_alignment.append(self._build_alignment_item(ref_seq[i1+i], learner_seq[j1+i], True))
-            elif tag == 'replace': # Thay thế (có thể là tốt hoặc xấu)
-                # Đây là phần phức tạp, chúng ta có thể dùng lại logic THRESHOLD ở trên
-                # hoặc đơn giản hóa bằng cách coi tất cả replace là mismatch
-                # Để đơn giản và hiệu quả, ta sẽ align 2 đoạn con này
-                sub_ref = ref_seq[i1:i2]
-                sub_learner = learner_seq[j1:j2]
-                # Bạn có thể gọi một hàm align nhỏ hơn ở đây nếu cần, hoặc xử lý đơn giản
-                max_len = max(len(sub_ref), len(sub_learner))
-                for i in range(max_len):
-                    ref_val = sub_ref[i] if i < len(sub_ref) else None
-                    learner_val = sub_learner[i] if i < len(sub_learner) else None
-                    is_match = ref_val == learner_val
-                    final_alignment.append(self._build_alignment_item(ref_val, learner_val, is_match))
-            elif tag == 'delete': # Thiếu từ (có trong ref, không có trong learner)
+                    ref_val = ref_seq[i1 + i]
+                    learner_val = learner_seq[j1 + i]
+                    final_alignment.append(self._build_alignment_item(ref_val, learner_val, True))
+
+            elif tag == 'delete':  # Từ bị thiếu (có trong ref, không có trong learner)
                 for i in range(i1, i2):
                     final_alignment.append(self._build_alignment_item(ref_seq[i], None, False))
-            elif tag == 'insert': # Thừa từ (không có trong ref, có trong learner)
+
+            elif tag == 'insert':  # Từ bị thừa (không có trong ref, có trong learner)
                 for i in range(j1, j2):
                     final_alignment.append(self._build_alignment_item(None, learner_seq[i], False))
+
+            elif tag == 'replace':  # Các từ được coi là thay thế cho nhau
+                # Xử lý trường hợp số lượng từ ref và learner trong đoạn 'replace' không bằng nhau
+                len_ref_sub = i2 - i1
+                len_learner_sub = j2 - j1
+                max_sub_len = max(len_ref_sub, len_learner_sub)
+
+                for i in range(max_sub_len):
+                    ref_val = ref_seq[i1 + i] if i < len_ref_sub else None
+                    learner_val = learner_seq[j1 + i] if i < len_learner_sub else None
+                    # is_match luôn là False trong trường hợp replace
+                    final_alignment.append(self._build_alignment_item(ref_val, learner_val, False))
 
         return final_alignment
 
