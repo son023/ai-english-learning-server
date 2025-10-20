@@ -622,11 +622,11 @@ const PronunciationPractice = ({ page, setPage }) => {
                       disabled={!isValidInput}
                       className={`flex items-center gap-3 px-8 py-4 rounded-full font-semibold shadow-lg transition-all ${
                         !isValidInput
-                        ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
-                        : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
-                    }`}>
-                    <Mic size={24} /> 
-                    {!isValidInput ? 'Sửa lỗi để ghi âm' : 'Bắt đầu ghi âm'}
+                          ? 'bg-gray-400 text-gray-600 cursor-not-allowed opacity-50'
+                          : 'bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:from-green-600 hover:to-emerald-700 transform hover:scale-105'
+                      }`}>
+                      <Mic size={24} /> 
+                      {!isValidInput ? 'Sửa lỗi để ghi âm' : 'Bắt đầu ghi âm'}
                     </button>
                   ) : (
                     <button
@@ -645,7 +645,7 @@ const PronunciationPractice = ({ page, setPage }) => {
                     </p>
                   </div>
                 )}
-
+                
                 {audioBlob && (
                   <div className="flex flex-wrap justify-center gap-3 pt-4">
                     <button
