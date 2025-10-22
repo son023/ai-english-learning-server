@@ -3,7 +3,7 @@ import { Volume2, Mic, MicOff, Send, RotateCcw, Play, X } from "lucide-react";
 import axios from "axios";
 import HeaderNav from "./HeaderNav";
 import Result from "./Result";
-import AlignmentVisualization from "./AlignmentVisualization";
+import WordPhonemeComparison from "./WordPhonemeComparison";
 import { AcademicCapIcon, BriefcaseIcon, ChatBubbleBottomCenterTextIcon, GlobeAmericasIcon } from "@heroicons/react/24/solid";
 
 const GOALS = [
@@ -214,136 +214,146 @@ export default function ThreeStepPractice({ page, setPage }) {
     return missionInfo.sentences[idx].replace(/^\[translate:|\]$/g, "");
   }, [missionInfo, selectedSentenceIndex]);
 
-  const renderColoredTextWithPhonemes = () => {
-    if (!results || !results.phoneme_alignment) return null;
-    
+  const renderColoredPracticeTextWithPhonemes = () => {
+    const refPhonemes = results.reference_phonemes || [];
+    const learnerPhonemes = results.learner_phonemes || [];
     const alignment = results.phoneme_alignment || [];
 
-    function buildColoredSentence(targetText, advanceOn) {
-      const words = (targetText || "").split(/\s+/);
-      let wordIndex = 0;
-      const coloredSegments = [];
+    // Tạo map để track phoneme nào có match (dùng chung cho cả 2 câu)
+    const phonemeMatchMap = new Map();
+    alignment.forEach((item) => {
+      if (item.ref) {
+        // Nếu chưa có hoặc item hiện tại is_match = true thì update
+        // Ưu tiên is_match = true (nếu có ít nhất 1 match thì coi là đúng)
+        const existing = phonemeMatchMap.get(item.ref);
+        if (!existing || item.is_match) {
+          phonemeMatchMap.set(item.ref, item.is_match);
+        }
+      }
+    });
 
-      alignment.forEach((pair) => {
-        const shouldAdvance =
-          advanceOn === "ref" ? pair.ref !== null : pair.learner !== null;
-        if (!shouldAdvance) return;
+    const renderReferenceSentence = () => {
+      return refPhonemes.map((wordData, index) => {
+        // Kiểm tra xem phoneme có match không
+        const hasMatch = phonemeMatchMap.get(wordData.phoneme);
+        const isError = hasMatch === false;  // Chỉ đỏ khi explicitly false
 
-        const word = words[wordIndex] ?? "";
-        let wordSpans = [];
+        return (
+          <span
+            key={`ref-word-${index}`}
+            className={`inline-block px-3 py-1 m-1 rounded-md font-medium ${
+              isError
+                ? "bg-red-100 text-red-700 border border-red-300"
+                : "bg-green-50 text-green-700 border border-green-200"
+            }`}
+          >
+            {wordData.word}
+          </span>
+        );
+      });
+    };
 
-        const refSym = pair.ref;
-        const learnerSym = pair.learner;
-        const emphasisClass =
-          advanceOn === "ref" ? "font-bold underline" : "underline";
-        if (
-          (advanceOn === "ref" && learnerSym === null) ||
-          (advanceOn === "learner" && refSym === null)
-        ) {
-          wordSpans.push(
+    const renderLearnerSentence = () => {
+      const displayedIndices = new Set();  // Track theo INDEX thay vì phoneme text
+      const results = [];
+
+      // Bước 1: Hiển thị các từ theo alignment với reference
+      alignment.forEach((item, index) => {
+        if (!item.learner) {
+          results.push(
             <span
-              key={`word-${advanceOn}-${wordIndex}`}
-              className={`text-red-600 ${emphasisClass}`}
+              key={`learner-missing-${index}`}
+              className="inline-block px-3 py-1 m-1 rounded-md bg-gray-100 border border-gray-300"
             >
-              {word}
+              <span className="text-gray-400 font-mono">____</span>
             </span>
           );
-        } else if (pair.is_match) {
-          wordSpans.push(
-            <span
-              key={`word-${advanceOn}-${wordIndex}`}
-              className={`text-green-600 ${emphasisClass}`}
-            >
-              {word}
-            </span>
-          );
-        } else {
-          const subAlignment = pair.sub_alignment || [];
-          const charCount =
-            (advanceOn === "ref"
-              ? (refSym || "").length
-              : (learnerSym || "").length) || 1;
-          let subIdxCount = 0;
+          return;
+        }
 
-          subAlignment.forEach((subPair, subIdx) => {
-            const consider =
-              advanceOn === "ref"
-                ? subPair.ref !== null
-                : subPair.learner !== null;
-            if (!consider) return;
-            const isCorrect = !!subPair.is_match;
-            const colorClass = isCorrect
-              ? `text-green-600 ${emphasisClass}`
-              : `text-red-600 ${emphasisClass}`;
-
-            const start = Math.floor((subIdxCount * word.length) / charCount);
-            const end = Math.floor(
-              ((subIdxCount + 1) * word.length) / charCount
-            );
-            const part = word.substring(start, end);
-            if (part) {
-              wordSpans.push(
-                <span
-                  key={`sub-${advanceOn}-${wordIndex}-${subIdx}`}
-                  className={colorClass}
-                >
-                  {part}
-                </span>
-              );
-            }
-            subIdxCount++;
-          });
-
-          const lastEnd = Math.floor((charCount * word.length) / charCount);
-          if (lastEnd < word.length) {
-            const remaining = word.substring(lastEnd);
-            if (wordSpans.length > 0) {
-              const lastSpan = wordSpans[wordSpans.length - 1];
-              wordSpans[wordSpans.length - 1] = (
-                <span key={lastSpan.key} className={lastSpan.props.className}>
-                  {lastSpan.props.children + remaining}
-                </span>
-              );
-            } else {
-              wordSpans.push(
-                <span
-                  key={`remain-${advanceOn}-${wordIndex}`}
-                  className="text-red-600 font-bold underline"
-                >
-                  {remaining}
-                </span>
-              );
-            }
+        // Tìm INDEX của learner word trong learnerPhonemes (chưa được hiển thị)
+        let learnerWordIndex = -1;
+        for (let i = 0; i < learnerPhonemes.length; i++) {
+          if (learnerPhonemes[i].phoneme === item.learner && !displayedIndices.has(i)) {
+            learnerWordIndex = i;
+            break;
           }
         }
 
-        coloredSegments.push(...wordSpans);
-        wordIndex++;
-        if (wordIndex < words.length) coloredSegments.push(" ");
+        // Nếu đã hiển thị tất cả instances của phoneme này → ô trống
+        if (learnerWordIndex === -1) {
+          results.push(
+            <span
+              key={`learner-duplicate-${index}`}
+              className="inline-block px-3 py-1 m-1 rounded-md bg-gray-100 border border-gray-300"
+            >
+              <span className="text-gray-400 font-mono">____</span>
+            </span>
+          );
+          return;
+        }
+
+        // Đánh dấu index này đã hiển thị
+        displayedIndices.add(learnerWordIndex);
+
+        const learnerWord = learnerPhonemes[learnerWordIndex];
+        const isError = !item.is_match;
+
+        results.push(
+          <span
+            key={`learner-word-${index}`}
+            className={`inline-block px-3 py-1 m-1 rounded-md font-medium ${
+              isError
+                ? "bg-red-100 text-red-700 border border-red-300"
+                : "bg-green-50 text-green-700 border border-green-200"
+            }`}
+          >
+            {learnerWord.word}
+          </span>
+        );
       });
 
-      return coloredSegments.length > 0 ? coloredSegments : [targetText];
-    }
+      // Bước 2: Thêm các từ THỪA (extra words user nói nhưng không có trong alignment)
+      learnerPhonemes.forEach((learnerWord, index) => {
+        if (!displayedIndices.has(index)) {
+          results.push(
+            <span
+              key={`learner-extra-${index}`}
+              className="inline-block px-3 py-1 m-1 rounded-md font-medium bg-orange-100 text-orange-700 border border-orange-300"
+            >
+              {learnerWord.word}
+            </span>
+          );
+        }
+      });
 
-    const refSentenceColored = buildColoredSentence(currentSentence, "ref");
-    const learnerSentenceColored = results.transcribed_text || "";
+      return results;
+    };
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <div className="text-sm font-semibold text-gray-600 mb-2">
-            Câu gốc
+          <div className="text-sm font-semibold text-gray-600 mb-2 flex items-center gap-2">
+            <span>Câu chuẩn (Reference)</span>
+            <span className="text-xs text-gray-500 font-normal">
+              - Đỏ: phát âm sai, Xanh: phát âm đúng.
+            </span>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
-            {refSentenceColored}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            {renderReferenceSentence()}
           </div>
         </div>
+
         <div>
-          <div className="text-sm font-semibold text-gray-600 mb-2">
-            Câu bạn đọc
+          <div className="text-sm font-semibold text-gray-600 mb-2 flex items-center gap-2">
+            <span>Câu bạn đọc (Your pronunciation)</span>
+            <span className="text-xs text-gray-500 font-normal">
+              - <span className="font-mono bg-gray-100 px-1 rounded">____</span>
+              : Thiếu từ.
+            </span>
           </div>
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-gray-800 font-medium">
-            {learnerSentenceColored}
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            {renderLearnerSentence()}
           </div>
         </div>
       </div>
@@ -554,11 +564,13 @@ export default function ThreeStepPractice({ page, setPage }) {
           reset();
         }}
         historyAudioUrl={audioUrlRef.current}
-        renderColoredText={renderColoredTextWithPhonemes}
+        renderColoredText={renderColoredPracticeTextWithPhonemes}
         alignmentVisualization={
           results?.phoneme_alignment?.length > 0 ? (
-            <AlignmentVisualization
+            <WordPhonemeComparison
               alignmentData={results.phoneme_alignment}
+              refPhonemes={results.reference_phonemes}
+              learnerPhonemes={results.learner_phonemes}
             />
           ) : null
         }

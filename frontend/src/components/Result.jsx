@@ -177,7 +177,7 @@ const Result = ({
                         {wordData.word}
                       </span>
                       <span
-                        className={`font-bold ${getScoreColor(
+                        className={`font-bold rounded ${getScoreColor(
                           wordData.accuracy_percentage
                         )} ${renderColoredText ? "text-lg" : "text-lg"}`}>
                         {wordData.accuracy_percentage?.toFixed(0)}%
