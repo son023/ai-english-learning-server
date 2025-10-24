@@ -22,13 +22,19 @@ const STORE_NAME = "practiceHistory";
 
 const initDB = () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2); // Tăng version lên 2
     request.onerror = () => reject("Error opening DB");
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+      }
+      if (!db.objectStoreNames.contains("wordPracticeHistory")) {
+        db.createObjectStore("wordPracticeHistory", {
           keyPath: "id",
           autoIncrement: true,
         });
