@@ -326,6 +326,20 @@ const WordPronunciationLearning = ({ page, setPage }) => {
     }
   }, [isRecording, historyAudioUrl]);
 
+  const resetWithoutClearingWord = useCallback(() => {
+    setAudioBlob(null);
+    setResult(null);
+    setValidationError("");
+    setShowResultsModal(false);
+    if (isRecording) {
+      stopRecording();
+    }
+    if (historyAudioUrl) {
+      URL.revokeObjectURL(historyAudioUrl);
+      setHistoryAudioUrl(null);
+    }
+  }, [isRecording, historyAudioUrl]);
+
   // Hàm để handle click vào item lịch sử
   const handleHistoryItemClick = (historyItem) => {
     setResult(historyItem.results);
@@ -340,7 +354,7 @@ const WordPronunciationLearning = ({ page, setPage }) => {
   // Hàm để luyện lại từ
   const handlePracticeAgain = (selectedWord) => {
     setWord(selectedWord);
-    resetAll();
+    resetWithoutClearingWord();
     mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -357,6 +371,20 @@ const WordPronunciationLearning = ({ page, setPage }) => {
       const audioUrl = URL.createObjectURL(audioBlob);
       const audio = new Audio(audioUrl);
       audio.play().catch(console.error);
+    }
+  };
+
+  const playWordPronunciation = () => {
+    if (!word.trim() || validationError) return;
+    
+    if ('speechSynthesis' in window) {
+      speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(word.trim());
+      utterance.lang = 'en-US';
+      utterance.rate = 0.8;
+      speechSynthesis.speak(utterance);
+    } else {
+      alert('Trình duyệt không hỗ trợ text-to-speech');
     }
   };
 
@@ -378,7 +406,22 @@ const WordPronunciationLearning = ({ page, setPage }) => {
 
             {/* Input Section */}
             <article className="card p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Nhập từ muốn luyện</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Nhập từ muốn luyện</h2>
+                <button
+                  onClick={playWordPronunciation}
+                  disabled={!word.trim() || validationError}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    !word.trim() || validationError
+                      ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 transform hover:scale-105 shadow-md'
+                  }`}
+                  title="Nghe cách phát âm chuẩn của từ này"
+                >
+                  <Volume2 size={18} />
+                  <span className="text-sm">Nghe từ</span>
+                </button>
+              </div>
           
           <div className="space-y-4">
             <div>
@@ -390,6 +433,7 @@ const WordPronunciationLearning = ({ page, setPage }) => {
                 className={`w-full p-4 text-lg border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   validationError ? 'border-red-500' : 'border-gray-300'
                 }`}
+                spellCheck={true}
               />
               {validationError && (
                 <p className="text-red-500 text-sm mt-2">{validationError}</p>
@@ -509,29 +553,43 @@ const WordPronunciationLearning = ({ page, setPage }) => {
            {practiceHistory.length > 0 ? (
              <ul className="space-y-3">
                {practiceHistory.map((item) => (
-                 <li key={item.id} className="border-b pb-3 last:border-b-0">
-                   <div className="p-2 rounded-md">
-                     <p className="text-sm text-gray-700 truncate mb-2">
-                       "{item.results.word}"
-                     </p>
-                     <div className="flex justify-between items-center">
+                 <li key={item.id} className="border border-gray-200 rounded-lg p-3 mb-3 last:mb-0 hover:shadow-md transition-all bg-white">
+                   <div className="space-y-3">
+                     <div className="flex items-center justify-between">
+                       <div className="flex items-center gap-2">
+                         <BookOpen size={16} className="text-indigo-500" />
+                         <p className="text-sm font-semibold text-gray-800">
+                           "{item.results.word}"
+                         </p>
+                       </div>
                        <span
-                         className={`text-xs font-bold ${getScoreColor(
-                           item.results.pronunciation_score
-                         )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}>
+                         className={`text-xs font-bold px-3 py-1 rounded-full ${
+                           item.results.pronunciation_score >= 90 
+                             ? 'bg-green-500 text-white'
+                             : item.results.pronunciation_score >= 75
+                             ? 'bg-blue-500 text-white'
+                             : item.results.pronunciation_score >= 60
+                             ? 'bg-yellow-500 text-white'
+                             : 'bg-red-500 text-white'
+                         }`}>
                          {item.results.pronunciation_score.toFixed(1)}/100
                        </span>
+                     </div>
+                     <div className="flex justify-between items-center">
+                       <div className="text-xs text-gray-500">
+                         {item.results.correct_phonemes}/{item.results.total_phonemes} phonemes đúng
+                       </div>
                        <div className="flex items-center gap-2">
                          <button
                            onClick={() => handlePracticeAgain(item.results.word)}
-                           className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-100"
+                           className="flex items-center gap-1 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-md hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all shadow-sm"
                            title="Luyện tập lại từ này">
-                           <RefreshCw size={14} />
-                           <span>Luyện lại</span>
+                           <RefreshCw size={12} />
+                           <span className="font-medium">Luyện lại</span>
                          </button>
                          <button
                            onClick={() => handleHistoryItemClick(item)}
-                           className="text-xs text-gray-600 hover:text-gray-900 font-medium p-1 rounded-md hover:bg-gray-100"
+                           className="text-xs text-gray-600 hover:text-gray-900 font-medium px-3 py-1.5 rounded-md hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all"
                            title="Xem chi tiết kết quả">
                            Chi tiết
                          </button>
@@ -561,6 +619,7 @@ const WordPronunciationLearning = ({ page, setPage }) => {
            }
          }}
          historyAudioUrl={historyAudioUrl}
+         onPracticeAgain={handlePracticeAgain}
        />
        </main>
      </div>

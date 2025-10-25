@@ -1,7 +1,7 @@
 import React from "react";
-import { X, Play, Volume2, Trophy, Target, BookOpen } from "lucide-react";
+import { X, Play, Volume2, Trophy, Target, BookOpen, RefreshCw } from "lucide-react";
 
-const WordResult = ({ show, results, onClose, historyAudioUrl }) => {
+const WordResult = ({ show, results, onClose, historyAudioUrl, onPracticeAgain }) => {
   if (!show || !results) return null;
 
   const getScoreColor = () => {
@@ -139,18 +139,32 @@ const WordResult = ({ show, results, onClose, historyAudioUrl }) => {
               </div>
             </div>
 
-            {/* Audio Playback */}
-            {historyAudioUrl && (
-              <div className="text-center">
-                <button
-                  onClick={playHistoryAudio}
-                  className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all mx-auto"
-                >
-                  <Volume2 size={20} />
-                  Nghe lại bản ghi
-                </button>
+            <div className="text-center">
+              <div className="flex flex-wrap justify-center gap-4">
+                {historyAudioUrl && (
+                  <button
+                    onClick={playHistoryAudio}
+                    className="flex items-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all"
+                  >
+                    <Volume2 size={20} />
+                    Nghe lại bản ghi
+                  </button>
+                )}
+                
+                {onPracticeAgain && (
+                  <button
+                    onClick={() => {
+                      onPracticeAgain(results.word);
+                      onClose();
+                    }}
+                    className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all"
+                  >
+                    <RefreshCw size={20} />
+                    Luyện lại từ này
+                  </button>
+                )}
               </div>
-            )}
+            </div>
 
             {/* Feedback */}
             <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
