@@ -1,5 +1,5 @@
 import React from "react";
-import { Mic, Map } from "lucide-react";
+import { Mic, Map, BookOpen } from "lucide-react";
 
 export default function HeaderNav({ title, page, setPage }) {
   return (
@@ -10,6 +10,16 @@ export default function HeaderNav({ title, page, setPage }) {
         </h1>
         <div className="bg-gray-100 border rounded-full p-1 shadow-inner flex items-center">
           <button
+            onClick={() => setPage && setPage('word-learning')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              page === 'word-learning'
+                ? 'bg-white text-blue-600 shadow ring-1 ring-blue-200'
+                : 'text-gray-600 hover:bg-white/70'
+            }`}
+          >
+            <BookOpen size={16} /> Luyện Từ Đơn
+          </button>
+          <button
             onClick={() => setPage && setPage('practice')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               page === 'practice'
@@ -17,7 +27,7 @@ export default function HeaderNav({ title, page, setPage }) {
                 : 'text-gray-600 hover:bg-white/70'
             }`}
           >
-            <Mic size={16} /> Tự Luyện
+            <Mic size={16} /> Luyện Theo Câu
           </button>
           <button
             onClick={() => setPage && setPage('three-step')}

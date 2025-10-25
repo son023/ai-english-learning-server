@@ -47,3 +47,27 @@ class SentencePhonemesResponse(BaseModel):
     """Response model chứa danh sách phonemes cho cả câu."""
     phonemes: List[PhonemeData]
 
+class WordPronunciationRequest(BaseModel):
+    """Request model để chấm điểm phát âm một từ."""
+    audio_base64: str
+    transcribe: str
+
+class PhonemeComparison(BaseModel):
+    """Model để so sánh phoneme giữa reference và learner."""
+    position: int
+    reference_phoneme: str
+    learner_phoneme: str
+    is_correct: bool
+    error_type: Optional[str] = None  # "substitution", "insertion", "deletion"
+
+class WordPronunciationResponse(BaseModel):
+    """Response model cho kết quả chấm điểm phát âm từ."""
+    word: str
+    reference_phonemes: str
+    learner_phonemes: str
+    pronunciation_score: float  # 0-100
+    phoneme_comparisons: List[PhonemeComparison]
+    correct_phonemes: int
+    total_phonemes: int
+    feedback: str
+

@@ -18,12 +18,16 @@ from models import (
     # Các model dưới đây được thêm vào/sửa đổi cho API mới
     SentencePhonemesRequest,
     SentencePhonemesResponse,
-    PhonemeData
+    PhonemeData,
+    WordPronunciationRequest,
+    WordPronunciationResponse,
+    PhonemeComparison
 )
 
 from services.whisper_service import WhisperService
 from services.pronunciation_service import PronunciationService
 from services.llm_service import LLMService
+from services.phoneme_service import PhonemeService
 
 # --- Cấu hình logging (không đổi) ---
 log_file = "app.log"
@@ -58,6 +62,7 @@ whisper_service = WhisperService(model_size="small")
 pronunciation_service = PronunciationService()
 llm_service = LLMService()
 sentences_service = SentencesService(csv_path=os.path.join(os.path.dirname(__file__), "docs", "sentences.csv"))
+phoneme_service = PhonemeService()
 
 @app.on_event("startup")
 async def startup_event():
@@ -130,6 +135,56 @@ async def get_phonemes_for_sentence(request: SentencePhonemesRequest):
     except Exception as e:
         logger.error(f"Lỗi khi lấy phoneme cho câu '{sentence}': {e}")
         raise HTTPException(status_code=500, detail="Could not generate phonemes for the sentence.")
+
+@app.post("/evaluate-word-pronunciation", response_model=WordPronunciationResponse)
+async def evaluate_word_pronunciation(request: WordPronunciationRequest):
+    """
+    API để chấm điểm phát âm một từ tiếng Anh.
+    Sử dụng gTTS để tạo audio reference và wav2vec2 để so sánh phoneme.
+    """
+    audio_base64 = request.audio_base64.strip()
+    word = request.transcribe.strip()
+    
+    if not audio_base64 or not word:
+        raise HTTPException(status_code=400, detail="Audio và từ cần đánh giá không được để trống.")
+    
+    try:
+        result = phoneme_service.evaluate_word_pronunciation(audio_base64, word)
+        
+        if "error" in result:
+            logger.error(f"Lỗi đánh giá phát âm từ '{word}': {result['error']}")
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        phoneme_comparisons = [
+            PhonemeComparison(
+                position=comp["position"],
+                reference_phoneme=comp["reference_phoneme"],
+                learner_phoneme=comp["learner_phoneme"],
+                is_correct=comp["is_correct"],
+                error_type=comp["error_type"]
+            )
+            for comp in result["phoneme_comparisons"]
+        ]
+        
+        response = WordPronunciationResponse(
+            word=result["word"],
+            reference_phonemes=result["reference_phonemes"],
+            learner_phonemes=result["learner_phonemes"],
+            pronunciation_score=result["pronunciation_score"],
+            phoneme_comparisons=phoneme_comparisons,
+            correct_phonemes=result["correct_phonemes"],
+            total_phonemes=result["total_phonemes"],
+            feedback=result["feedback"]
+        )
+        
+        logger.info(f"Đánh giá phát âm từ '{word}' thành công. Điểm: {result['pronunciation_score']}")
+        return response
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Lỗi không mong muốn khi đánh giá phát âm từ '{word}': {e}")
+        raise HTTPException(status_code=500, detail="Lỗi hệ thống khi xử lý yêu cầu.")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

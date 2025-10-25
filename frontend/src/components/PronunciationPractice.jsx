@@ -22,13 +22,19 @@ const STORE_NAME = "practiceHistory";
 
 const initDB = () => {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2); // Tăng version lên 2
     request.onerror = () => reject("Error opening DB");
     request.onsuccess = () => resolve(request.result);
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, {
+          keyPath: "id",
+          autoIncrement: true,
+        });
+      }
+      if (!db.objectStoreNames.contains("wordPracticeHistory")) {
+        db.createObjectStore("wordPracticeHistory", {
           keyPath: "id",
           autoIncrement: true,
         });
@@ -690,48 +696,48 @@ const PronunciationPractice = ({ page, setPage }) => {
             {practiceHistory.length > 0 ? (
               <ul className="space-y-3">
                 {practiceHistory.map((item) => (
-                  <li key={item.id} className="border-b pb-3 last:border-b-0">
-                    {/* <button
-                      onClick={() => handleHistoryItemClick(item)}
-                      className="w-full text-left p-2 rounded-md hover:bg-gray-100">
-                      <p className="text-sm text-gray-700 truncate">
-                        {item.results.original_sentence}
-                      </p>
-                      <div className="flex justify-between items-center mt-1">
+                  <li key={item.id} className="border border-gray-200 rounded-lg p-3 mb-3 last:mb-0 hover:shadow-md transition-all bg-white">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-2 flex-1">
+                          <BookOpen size={16} className="text-indigo-500 mt-0.5 flex-shrink-0" />
+                          <p className="text-sm font-medium text-gray-800 line-clamp-2 leading-relaxed">
+                            {item.results.original_sentence}
+                          </p>
+                        </div>
                         <span
-                          className={`text-xs font-bold ${getScoreColor(
-                            item.results.scores.overall
-                          )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}>
+                          className={`text-xs font-bold px-3 py-1 rounded-full flex-shrink-0 ${
+                            item.results.scores.overall >= 90 
+                              ? 'bg-green-500 text-white'
+                              : item.results.scores.overall >= 75
+                              ? 'bg-blue-500 text-white'
+                              : item.results.scores.overall >= 60
+                              ? 'bg-yellow-500 text-white'
+                              : 'bg-red-500 text-white'
+                          }`}>
                           {item.results.scores.overall.toFixed(1)}/100
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {new Date(item.date).toLocaleDateString("vi-VN")}
                         </span>
                       </div>
-                    </button>
-                     */}
-                    <div className="p-2 rounded-md">
-                      <p className="text-sm text-gray-700 truncate mb-2">
-                        {item.results.original_sentence}
-                      </p>
                       <div className="flex justify-between items-center">
-                        <span
-                          className={`text-xs font-bold ${getScoreColor(
-                            item.results.scores.overall
-                          )} bg-opacity-80 text-white px-2 py-0.5 rounded-full`}>
-                          {item.results.scores.overall.toFixed(1)}/100
-                        </span>
+                        <div className="text-xs text-gray-500">
+                          {new Date(item.date).toLocaleDateString("vi-VN", {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handlePracticeAgain(item.results.original_sentence)}
-                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 p-1 rounded-md hover:bg-blue-100"
+                            className="flex items-center gap-1 text-xs bg-gradient-to-r from-green-500 to-emerald-600 text-white px-3 py-1.5 rounded-md hover:from-green-600 hover:to-emerald-700 transform hover:scale-105 transition-all shadow-sm"
                             title="Luyện tập lại câu này">
-                            <RefreshCw size={14} />
-                            <span>Luyện lại</span>
+                            <RefreshCw size={12} />
+                            <span className="font-medium">Luyện lại</span>
                           </button>
                           <button
                             onClick={() => handleHistoryItemClick(item)}
-                            className="text-xs text-gray-600 hover:text-gray-900 font-medium p-1 rounded-md hover:bg-gray-100"
+                            className="text-xs text-gray-600 hover:text-gray-900 font-medium px-3 py-1.5 rounded-md hover:bg-gray-100 border border-gray-200 hover:border-gray-300 transition-all"
                             title="Xem chi tiết kết quả">
                             Chi tiết
                           </button>
