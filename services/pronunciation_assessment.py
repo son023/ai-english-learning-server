@@ -20,6 +20,8 @@ from transformers import Wav2Vec2Processor, Wav2Vec2ForCTC
 from Levenshtein import distance as levenshtein_distance
 from g2p_en import G2p
 from typing import Dict, List, Any
+from models import PronunciationScore, WordError
+from services.llm_service import LLMService
 
 # Download required NLTK data
 nltk.download('cmudict', quiet=True)
@@ -28,7 +30,7 @@ arpabet = nltk.corpus.cmudict.dict()
 class PronunciationAssessmentService:
     """Service wrapper for pronunciation assessment"""
     
-    def __init__(self, phoneme_service=None):
+    def __init__(self, phoneme_service=None, llm_service=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.compute_type = "float32" if self.device == "cuda" else "int8"
         self.target_sr = 16000
@@ -39,6 +41,7 @@ class PronunciationAssessmentService:
         self.align_model = None
         self.align_metadata = None
         self.g2p = None
+        self.llm_service = llm_service if llm_service else LLMService()
         
         self.logger = logging.getLogger(__name__)
         
@@ -125,7 +128,7 @@ class PronunciationAssessmentService:
                     word_alignments, reference_phonemes
                 )
                 
-                print(f"✅ Pronunciation assessment completed. Score: {result['scores']['sentence_score']:.2f}")
+                print(f"✅ Assessment completed. Overall: {result['scores']['overall']:.1f} | Pronunciation: {result['scores']['pronunciation']:.1f} | Fluency: {result['scores']['fluency']:.1f}")
                 return result
                 
             finally:
@@ -186,6 +189,216 @@ class PronunciationAssessmentService:
             self.logger.error(f"  ❌ Error preprocessing audio: {e}")
             raise
 
+    def _calculate_fluency_score(self, words_with_times):
+        """
+        Calculate fluency score based on word timestamps
+        
+        Metrics (theo chuẩn đánh giá phát âm):
+        1. Speech rate: Số từ / tổng thời gian phát âm
+        2. Pauses: Khoảng dừng giữa các từ với threshold
+        3. Continuity: Sự liền mạch, không bị ngắt quãng
+        4. Timing accuracy: Độ chính xác thời gian mỗi từ
+        """
+        if not words_with_times or len(words_with_times) < 2:
+            return 85.0, {}  # Default score if insufficient data
+        
+        word_count = len(words_with_times)
+        
+        # ========== 1. SPEECH RATE (Tốc độ nói) ==========
+        # Speech rate = Số từ / Tổng thời gian phát âm
+        total_duration = words_with_times[-1]['end'] - words_with_times[0]['start']
+        speech_rate = word_count / total_duration if total_duration > 0 else 0  # words per second
+        speech_rate_wpm = speech_rate * 60  # words per minute
+        
+        # Chuẩn người bản ngữ: 2-3 từ/giây (120-180 từ/phút)
+        # Điểm speech rate (0-100)
+        if 2.0 <= speech_rate <= 3.0:  # Optimal range
+            speech_rate_score = 100.0
+        elif 1.5 <= speech_rate < 2.0:  # Hơi chậm
+            speech_rate_score = 80.0 + (speech_rate - 1.5) * 40  # 80-100
+        elif 3.0 < speech_rate <= 3.5:  # Hơi nhanh
+            speech_rate_score = 100.0 - (speech_rate - 3.0) * 20  # 90-100
+        elif 1.0 <= speech_rate < 1.5:  # Chậm
+            speech_rate_score = 60.0 + (speech_rate - 1.0) * 40  # 60-80
+        elif 3.5 < speech_rate <= 4.0:  # Nhanh
+            speech_rate_score = 80.0 - (speech_rate - 3.5) * 20  # 70-90
+        else:  # Quá chậm hoặc quá nhanh
+            speech_rate_score = max(40.0, min(70.0, 50.0))
+        
+        # ========== 2. PAUSES (Khoảng dừng) ==========
+        # Phân tích khoảng cách giữa thời điểm kết thúc từ này và bắt đầu từ kế tiếp
+        pauses = []
+        pause_categories = {
+            'natural': 0,      # 0.05-0.3s: Tự nhiên
+            'acceptable': 0,   # 0.3-0.6s: Chấp nhận được
+            'long': 0,         # 0.6-1.0s: Dài
+            'very_long': 0     # >1.0s: Rất dài
+        }
+        
+        for i in range(len(words_with_times) - 1):
+            current_end = words_with_times[i]['end']
+            next_start = words_with_times[i + 1]['start']
+            pause = next_start - current_end
+            
+            if pause > 0:
+                pauses.append(pause)
+                
+                # Phân loại pause
+                if pause <= 0.3:
+                    pause_categories['natural'] += 1
+                elif pause <= 0.6:
+                    pause_categories['acceptable'] += 1
+                elif pause <= 1.0:
+                    pause_categories['long'] += 1
+                else:
+                    pause_categories['very_long'] += 1
+        
+        # Tính điểm pause (0-100)
+        total_pauses = len(pauses)
+        if total_pauses > 0:
+            # Tỷ lệ pause hợp lý (natural + acceptable)
+            good_pause_ratio = (pause_categories['natural'] + pause_categories['acceptable']) / total_pauses
+            
+            # Penalty cho pause dài
+            long_pause_penalty = pause_categories['long'] * 3 + pause_categories['very_long'] * 10
+            
+            pause_score = 100.0 * good_pause_ratio - long_pause_penalty
+            pause_score = max(0.0, min(100.0, pause_score))
+        else:
+            pause_score = 100.0
+        
+        avg_pause = np.mean(pauses) if pauses else 0
+        max_pause = max(pauses) if pauses else 0
+        total_pause_time = sum(pauses) if pauses else 0
+        
+        # ========== 3. CONTINUITY (Sự liền mạch) ==========
+        # Đo lường mức độ từ ngữ được phát âm liên tục, không bị ngắt quãng
+        # Continuity cao = ít khoảng dừng bất thường
+        
+        # Tính speaking time (thời gian thực sự nói)
+        speaking_time = total_duration - total_pause_time
+        continuity_ratio = speaking_time / total_duration if total_duration > 0 else 0
+        
+        # Điểm continuity (0-100)
+        # Ideal: 75-85% thời gian nói, 15-25% pause
+        if 0.75 <= continuity_ratio <= 0.85:
+            continuity_score = 100.0
+        elif 0.70 <= continuity_ratio < 0.75:
+            continuity_score = 85.0 + (continuity_ratio - 0.70) * 300  # 85-100
+        elif 0.85 < continuity_ratio <= 0.90:
+            continuity_score = 100.0 - (continuity_ratio - 0.85) * 100  # 95-100
+        elif 0.60 <= continuity_ratio < 0.70:
+            continuity_score = 70.0 + (continuity_ratio - 0.60) * 150  # 70-85
+        else:
+            continuity_score = max(50.0, continuity_ratio * 100)
+        
+        # ========== 4. TIMING ACCURACY (Độ chính xác thời gian) ==========
+        # So sánh duration từng từ với thời gian tham chiếu (chuẩn)
+        # Ước lượng: ~0.3-0.5s cho từ ngắn, ~0.5-0.8s cho từ dài
+        
+        word_durations = []
+        timing_deviations = []
+        
+        for word_info in words_with_times:
+            duration = word_info['end'] - word_info['start']
+            word_durations.append(duration)
+            
+            # Ước lượng duration chuẩn dựa trên số ký tự
+            word_len = len(word_info['word'])
+            if word_len <= 3:
+                expected_duration = 0.35  # Từ ngắn
+            elif word_len <= 6:
+                expected_duration = 0.50  # Từ trung bình
+            else:
+                expected_duration = 0.70  # Từ dài
+            
+            # Tính độ lệch
+            deviation = abs(duration - expected_duration) / expected_duration
+            timing_deviations.append(deviation)
+        
+        # Điểm timing accuracy (0-100)
+        avg_deviation = np.mean(timing_deviations) if timing_deviations else 0
+        
+        # Deviation < 30% = tốt, 30-50% = chấp nhận được, >50% = kém
+        if avg_deviation < 0.3:
+            timing_score = 100.0
+        elif avg_deviation < 0.5:
+            timing_score = 100.0 - (avg_deviation - 0.3) * 150  # 70-100
+        else:
+            timing_score = max(50.0, 70.0 - (avg_deviation - 0.5) * 50)
+        
+        # ========== TỔNG HỢP ĐIỂM FLUENCY ==========
+        # Weighted average of all metrics
+        fluency_score = (
+            speech_rate_score * 0.35 +    # 35%: Tốc độ nói
+            pause_score * 0.30 +           # 30%: Khoảng dừng
+            continuity_score * 0.20 +      # 20%: Liền mạch
+            timing_score * 0.15            # 15%: Timing accuracy
+        )
+        
+        fluency_score = max(0.0, min(100.0, fluency_score))
+        
+        # ========== CHI TIẾT METRICS ==========
+        fluency_details = {
+            # Speech rate
+            'speech_rate_wps': round(speech_rate, 2),  # words per second
+            'speech_rate_wpm': round(speech_rate_wpm, 1),  # words per minute
+            'speech_rate_score': round(speech_rate_score, 1),
+            
+            # Pauses
+            'total_pauses': total_pauses,
+            'pause_natural': pause_categories['natural'],
+            'pause_acceptable': pause_categories['acceptable'],
+            'pause_long': pause_categories['long'],
+            'pause_very_long': pause_categories['very_long'],
+            'avg_pause': round(avg_pause, 3),
+            'max_pause': round(max_pause, 3),
+            'total_pause_time': round(total_pause_time, 2),
+            'pause_score': round(pause_score, 1),
+            
+            # Continuity
+            'total_duration': round(total_duration, 2),
+            'speaking_time': round(speaking_time, 2),
+            'continuity_ratio': round(continuity_ratio, 3),
+            'continuity_score': round(continuity_score, 1),
+            
+            # Timing accuracy
+            'avg_word_duration': round(np.mean(word_durations), 3) if word_durations else 0,
+            'avg_timing_deviation': round(avg_deviation, 3),
+            'timing_score': round(timing_score, 1),
+            
+            # Overall
+            'word_count': word_count
+        }
+        
+        return fluency_score, fluency_details
+
+    def _calculate_word_fluency_score(self, word_info, word_len):
+        """
+        Calculate fluency score for individual word based on duration
+        Expected duration: ~0.35s for short words, ~0.5s for medium, ~0.7s for long
+        """
+        duration = word_info['end'] - word_info['start']
+        
+        # Ước lượng duration chuẩn
+        if word_len <= 3:
+            expected_duration = 0.35
+        elif word_len <= 6:
+            expected_duration = 0.50
+        else:
+            expected_duration = 0.70
+        
+        # Tính độ lệch
+        deviation = abs(duration - expected_duration) / expected_duration
+        
+        # Điểm fluency cho từ (0-100)
+        if deviation < 0.3:
+            return 100.0
+        elif deviation < 0.5:
+            return 100.0 - (deviation - 0.3) * 150  # 70-100
+        else:
+            return max(50.0, 70.0 - (deviation - 0.5) * 50)
+
     def _build_comprehensive_result(self, reference_text, words_with_times, word_predicted_phonemes, word_alignments, reference_phonemes):
         """Build comprehensive result with all required fields"""
         word_results = []
@@ -199,7 +412,6 @@ class PronunciationAssessmentService:
             word_clean = word_info['word'].strip('.,!?;:').upper()
             transcribed_words_dict[word_clean] = word_info
         
-        # STEP 1: Đánh giá các từ trong transcribed text (logic cũ)
         transcribed_word_results = {}
         for word_info in words_with_times:
             word = word_info['word']
@@ -209,23 +421,26 @@ class PronunciationAssessmentService:
             ref_phonemes = reference_phonemes.get(word_clean, [])
             pred_phonemes = word_predicted_phonemes.get(word_clean, [])
             
-            # Use pre-computed alignment if available
             if word_clean in word_alignments:
                 alignment = word_alignments[word_clean]
-                word_score, phoneme_acc, details = score_word(alignment)
-            elif ref_phonemes and pred_phonemes:
-                alignment = align_phoneme_sequences(ref_phonemes, pred_phonemes)
-                word_score, phoneme_acc, details = score_word(alignment)
+                pronunciation_score, phoneme_acc, details = score_word(alignment)
+                pronunciation_score = pronunciation_score * 100
             else:
-                word_score = confidence * 0.8
+                pronunciation_score = confidence * 80
                 phoneme_acc = confidence
                 details = []
+            
+            word_fluency = self._calculate_word_fluency_score(word_info, len(word_clean))
+            
+            word_overall_score = (pronunciation_score * 0.6) + (word_fluency * 0.4)
             
             transcribed_word_results[word_clean] = {
                 'word': word_clean,
                 'start': round(word_info['start'], 2),
                 'end': round(word_info['end'], 2),
-                'score': round(word_score * 100, 1),  # Convert to percentage
+                'score': round(word_overall_score, 1),
+                'pronunciation_score': round(pronunciation_score, 1),
+                'fluency_score': round(word_fluency, 1),
                 'phoneme_accuracy': round(phoneme_acc, 2),
                 'confidence': round(confidence, 2),
                 'reference_phonemes': ref_phonemes,
@@ -244,12 +459,13 @@ class PronunciationAssessmentService:
                 # Từ có trong transcribed - dùng kết quả đánh giá
                 word_results.append(transcribed_word_results[ref_word_clean])
             else:
-                # Từ bị thiếu - điểm = 0
                 word_results.append({
                     'word': ref_word_clean,
                     'start': 0,
                     'end': 0,
-                    'score': 0.0,  # Điểm = 0 cho từ bị thiếu
+                    'score': 0.0,
+                    'pronunciation_score': 0.0,
+                    'fluency_score': 0.0,
                     'phoneme_accuracy': 0.0,
                     'confidence': 0.0,
                     'reference_phonemes': ref_phonemes,
@@ -257,33 +473,87 @@ class PronunciationAssessmentService:
                     'phoneme_details': []
                 })
         
-        # Calculate sentence score
-        sentence_score = np.mean([w['score'] for w in word_results]) if word_results else 0.0
+        pronunciation_score = np.mean([w['pronunciation_score'] for w in word_results]) if word_results else 0.0
         
-        # Determine grade
-        if sentence_score >= 90:
+        fluency_score, fluency_details = self._calculate_fluency_score(words_with_times)
+        
+        overall_score = (pronunciation_score * 0.6) + (fluency_score * 0.4)
+        
+        if overall_score >= 90:
             grade = "Excellent"
-        elif sentence_score >= 80:
+        elif overall_score >= 80:
             grade = "Good"  
-        elif sentence_score >= 70:
+        elif overall_score >= 70:
             grade = "Fair"
         else:
             grade = "Needs Improvement"
         
-        # Generate feedback
-        feedback_parts = []
-        poor_words = [w for w in word_results if w['score'] < 70]
-        if poor_words:
-            feedback_parts.append(f"🔍 Cần cải thiện phát âm: {', '.join([w['word'] for w in poor_words[:5]])}")
+        # ========== GENERATE FEEDBACK USING LLM ==========
         
-        good_words = [w for w in word_results if w['score'] >= 80]  
-        if good_words:
-            feedback_parts.append(f"✅ Phát âm tốt: {', '.join([w['word'] for w in good_words[:3]])}")
+        # 1. Create word_errors list từ word_results đã có sẵn
+        word_errors = []
+        for i, word_result in enumerate(word_results):
+            word = word_result['word']
+            score = word_result['score']
+            
+            # Từ bị thiếu (score = 0, không có timestamp)
+            if score == 0 and word_result['start'] == 0 and word_result['end'] == 0:
+                word_errors.append(WordError(
+                    word=word,
+                    position=i,
+                    error_type="deletion",
+                    expected=word,
+                    actual="",
+                    severity="high"
+                ))
+            # Từ phát âm kém (score < 70)
+            elif score < 70:
+                word_errors.append(WordError(
+                    word=word,
+                    position=i,
+                    error_type="mispronunciation",
+                    expected=word,
+                    actual=word,
+                    severity="high" if score < 50 else "moderate"
+                ))
         
-        if not feedback_parts:
-            feedback_parts.append("Tiếp tục luyện tập để cải thiện!")
+        # 2. Calculate WER (Word Error Rate)
+        wer_score = len(word_errors) / max(len(word_results), 1) * 100
+        wer_score = min(100, wer_score)
         
-        feedback = " | ".join(feedback_parts)
+        # 3. Create PronunciationScore object
+        scores = PronunciationScore(
+            pronunciation=round(pronunciation_score, 1),
+            fluency=round(fluency_score, 1),
+            intonation=round(pronunciation_score * 0.85, 1),
+            stress=round(pronunciation_score * 0.8, 1),
+            overall=round(overall_score, 1)
+        )
+        
+        # 4. Generate LLM feedback
+        llm_feedback = ""
+        if self.llm_service:
+            try:
+                print(f"🤖 Generating LLM feedback with {len(word_errors)} errors detected...")
+                llm_feedback = self.llm_service.generate_pronunciation_feedback(
+                    original_sentence=reference_text,
+                    transcribed_text=transcribed_text,
+                    scores=scores,
+                    word_errors=word_errors,
+                    wer_score=wer_score
+                )
+                if llm_feedback:
+                    print(f"✅ LLM feedback generated ({len(llm_feedback)} chars)")
+                else:
+                    print(f"⚠️  LLM returned empty feedback")
+            except Exception as e:
+                print(f"⚠️  LLM feedback generation failed: {e}")
+        
+        # 5. Fallback to simple feedback if LLM fails
+        if llm_feedback:
+            feedback = llm_feedback
+        else:
+            feedback ="AI feedback is currently unavailable."
         
         # Build word_accuracy format for compatibility
         word_accuracy = []
@@ -291,22 +561,25 @@ class PronunciationAssessmentService:
             word_accuracy.append({
                 'word': w['word'],
                 'accuracy_percentage': w['score'],
-                'pronunciation_score': w['score'],
-                'rhythm_score': w['score'] * 0.9  # Mock rhythm score
+                'pronunciation_score': w['pronunciation_score'],
+                'rhythm_score': w['fluency_score']
             })
         
         return {
             'scores': {
-                'sentence_score': round(sentence_score, 1),
+                'sentence_score': round(overall_score, 1),
                 'grade': grade,
-                'overall': round(sentence_score, 1),
-                'pronunciation': round(sentence_score, 1),
-                'fluency': round(sentence_score * 0.9, 1),
-                'intonation': round(sentence_score * 0.85, 1),
-                'stress': round(sentence_score * 0.8, 1)
+                'overall': round(overall_score, 1),
+                'pronunciation': round(pronunciation_score, 1),
+                'fluency': round(fluency_score, 1),
+                'intonation': round(pronunciation_score * 0.85, 1),
+                'stress': round(pronunciation_score * 0.8, 1)
             },
+            'fluency_details': fluency_details,
             'words': word_results,
             'word_accuracy': word_accuracy,
+            'word_errors': [error.dict() for error in word_errors],
+            'wer_score': round(wer_score, 1),
             'transcribed_text': transcribed_text,
             'feedback': feedback,
             'original_sentence': reference_text

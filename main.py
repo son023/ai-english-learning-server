@@ -64,7 +64,10 @@ pronunciation_service = PronunciationService()
 llm_service = LLMService()
 sentences_service = SentencesService(csv_path=os.path.join(os.path.dirname(__file__), "docs", "sentences.csv"))
 phoneme_service = PhonemeService()
-pronunciation_assessment_service = PronunciationAssessmentService(phoneme_service=phoneme_service)
+pronunciation_assessment_service = PronunciationAssessmentService(
+    phoneme_service=phoneme_service,
+    llm_service=llm_service
+)
 
 @app.on_event("startup")
 async def startup_event():
@@ -103,15 +106,15 @@ async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
             "word_accuracy": result.get("word_accuracy", []),
             "scores": {
                 "pronunciation": result["scores"]["pronunciation"],
-                "fluency": 0,
-                "intonation": 0,
-                "stress": 0,
+                "fluency": result["scores"]["fluency"],
+                "intonation": result["scores"]["intonation"],
+                "stress": result["scores"]["stress"],
                 "overall": result["scores"]["overall"]
             },
-            "phoneme_errors": [],
+            "phoneme_errors": result.get("word_errors", []),  # Use word_errors
             "phoneme_alignment": [],
             "feedback": result.get("feedback", ""),
-            "wer_score": 0.0,
+            "wer_score": result.get("wer_score", 0.0),  # Use actual WER score
             "confidence": 0.9
         }
         
