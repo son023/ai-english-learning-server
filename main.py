@@ -64,7 +64,7 @@ pronunciation_service = PronunciationService()
 llm_service = LLMService()
 sentences_service = SentencesService(csv_path=os.path.join(os.path.dirname(__file__), "docs", "sentences.csv"))
 phoneme_service = PhonemeService()
-pronunciation_assessment_service = PronunciationAssessmentService()
+pronunciation_assessment_service = PronunciationAssessmentService(phoneme_service=phoneme_service)
 
 @app.on_event("startup")
 async def startup_event():

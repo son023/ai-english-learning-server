@@ -28,23 +28,48 @@ arpabet = nltk.corpus.cmudict.dict()
 class PronunciationAssessmentService:
     """Service wrapper for pronunciation assessment"""
     
-    def __init__(self):
+    def __init__(self, phoneme_service=None):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.compute_type = "float32" if self.device == "cuda" else "int8"
         self.target_sr = 16000
         self.processor = None
         self.model = None
+        self.phoneme_service = phoneme_service  
+        self.whisper_model = None
+        self.align_model = None
+        self.align_metadata = None
+        self.g2p = None
+        
         self.logger = logging.getLogger(__name__)
         
     def warmup(self):
         """Initialize and warmup the models"""
         try:
-            self.logger.info("🔧 Warming up Pronunciation Assessment Service...")
+            print("🔧 Warming up Pronunciation Assessment Service...")
             
-            # Load Wave2Phoneme model
-            self.processor, self.model = load_wave2phoneme_model()
+            if self.phoneme_service:
+                print("  ✓ Reusing Wav2Vec2 model from PhonemeService (no reload needed)")
+                self.processor, self.model = self.phoneme_service.get_processor_and_model()
+            else:
+                print("  ⚠️  PhonemeService not provided, loading Wav2Vec2 model separately")
+                self.processor, self.model = load_wave2phoneme_model()
             
-            self.logger.info("✅ Pronunciation Assessment Service warmed up successfully")
+            print("  🎤 Loading WhisperX model...")
+            self.whisper_model = whisperx.load_model("small.en", self.device, compute_type=self.compute_type)
+            print("  ✓ WhisperX model loaded")
+            
+            print("  🎯 Loading WhisperX alignment model...")
+            self.align_model, self.align_metadata = whisperx.load_align_model(
+                language_code="en", 
+                device=self.device
+            )
+            print("  ✓ WhisperX alignment model loaded")
+            
+            print("  📚 Loading G2P model...")
+            self.g2p = G2p()
+            print("  ✓ G2P model loaded")
+            
+            print("✅ Pronunciation Assessment Service warmed up successfully")
         except Exception as e:
             self.logger.error(f"❌ Failed to warmup Pronunciation Assessment Service: {e}")
 
@@ -53,7 +78,7 @@ class PronunciationAssessmentService:
         Main API function to evaluate pronunciation using the assessment method
         """
         try:
-            self.logger.info(f"🎯 Evaluating pronunciation for: '{reference_text}'")
+            print(f"🎯 Evaluating pronunciation for: '{reference_text}'")
             
             # STEP 1: Decode and preprocess audio
             audio_data, sr = self._preprocess_audio_from_base64(audio_base64)
@@ -65,19 +90,26 @@ class PronunciationAssessmentService:
                 temp_audio_path = tmp_file.name
             
             try:
-                # STEP 2: WhisperX timestamps  
-                words_with_times = get_word_timestamps(temp_audio_path)
+                # STEP 2: WhisperX timestamps 
+                words_with_times = get_word_timestamps(
+                    temp_audio_path, 
+                    self.whisper_model, 
+                    self.align_model, 
+                    self.align_metadata,
+                    self.device
+                )
                 
                 # STEP 3: Reference phonemes
-                reference_phonemes = get_reference_phonemes(reference_text)
+                reference_phonemes = get_reference_phonemes(reference_text, self.g2p)
                 
-                # STEP 4: Load Wave2Phoneme model if not loaded
+                # STEP 4: Load Wave2Phoneme model if not loaded 
                 if self.processor is None or self.model is None:
+                    print(f"STEP 4: Load Wave2Phoneme model if not loaded ")
                     self.processor, self.model = load_wave2phoneme_model()
                 
                 # STEP 5: Predict phonemes from FULL audio
                 predicted_phonemes_full = predict_phonemes_full_audio(
-                    audio_data, sr, self.processor, self.model
+                    audio_data, sr, self.processor, self.model, self.device
                 )
                 
                 # STEP 6: Align phonemes to words
@@ -93,7 +125,7 @@ class PronunciationAssessmentService:
                     word_alignments, reference_phonemes
                 )
                 
-                self.logger.info(f"✅ Pronunciation assessment completed. Score: {result['scores']['sentence_score']:.2f}")
+                print(f"✅ Pronunciation assessment completed. Score: {result['scores']['sentence_score']:.2f}")
                 return result
                 
             finally:
@@ -114,7 +146,7 @@ class PronunciationAssessmentService:
 
     def _preprocess_audio_from_base64(self, audio_base64: str):
         """Decode base64 audio and preprocess"""
-        self.logger.info("🔧 STEP 1: Preprocessing audio from base64...")
+        print("🔧 STEP 1: Preprocessing audio from base64...")
         
         try:
             # Decode base64
@@ -128,20 +160,20 @@ class PronunciationAssessmentService:
             try:
                 # Load audio using existing function logic
                 audio_data, sr = librosa.load(temp_path, sr=None)
-                self.logger.info(f"  ✓ Loaded: {len(audio_data)} samples @ {sr} Hz")
+                print(f"  ✓ Loaded: {len(audio_data)} samples @ {sr} Hz")
                 
                 # Resample if needed
                 if sr != self.target_sr:
                     audio_data = resampy.resample(audio_data, sr, self.target_sr)
                     sr = self.target_sr
-                    self.logger.info(f"  ✓ Resampled to {self.target_sr} Hz")
+                    print(f"  ✓ Resampled to {self.target_sr} Hz")
                 
                 # Normalize
                 if len(audio_data) > 0:
                     max_val = np.abs(audio_data).max()
                     if max_val > 0:
                         audio_data = audio_data / max_val * 0.95
-                    self.logger.info("  ✓ Normalized")
+                    print("  ✓ Normalized")
                 
                 return audio_data, sr
                     
@@ -327,26 +359,35 @@ def preprocess_audio(audio_path, target_sr=16000):
 # STEP 2: WHISPERX - WORD TIMESTAMPS
 # ============================================================================
 
-def get_word_timestamps(audio_path):
+def get_word_timestamps(audio_path, whisper_model=None, align_model=None, align_metadata=None, device=None):
     """Get word-level timestamps using WhisperX"""
     print("\n🎤 STEP 2: WhisperX for word timestamps...")
     
-    whisper_model = whisperx.load_model("small.en", DEVICE, compute_type=COMPUTE_TYPE)
+    if whisper_model is None:
+        device = device or DEVICE
+        print("Fallback: Load model nếu chưa được truyền vào")
+        whisper_model = whisperx.load_model("small.en", device, compute_type=COMPUTE_TYPE)
+    
+    if device is None:
+        device = DEVICE
     
     audio = whisperx.load_audio(audio_path)
     result = whisper_model.transcribe(audio, batch_size=8)
     print(f"  ✓ Transcribed: {result['segments'][0]['text'] if result['segments'] else 'N/A'}")
     
-    align_model, metadata = whisperx.load_align_model(
-        language_code=result["language"], 
-        device=DEVICE
-    )
+    if align_model is None or align_metadata is None:
+        print("Fallback: align_model nếu chưa được truyền vào")
+        align_model, align_metadata = whisperx.load_align_model(
+            language_code=result["language"], 
+            device=device
+        )
+    
     result_aligned = whisperx.align(
         result["segments"], 
         align_model, 
-        metadata, 
+        align_metadata, 
         audio, 
-        DEVICE
+        device
     )
     
     words_with_times = []
@@ -369,11 +410,14 @@ def get_word_timestamps(audio_path):
 # STEP 3: G2P - REFERENCE PHONEMES
 # ============================================================================
 
-def get_reference_phonemes(text):
+def get_reference_phonemes(text, g2p=None):
     """Generate reference phonemes using G2P"""
     print("\n📚 STEP 3: Generating reference phonemes...")
     
-    g2p = G2p()
+    if g2p is None:
+        print("Fallback: Load g2p nếu chưa được truyền vào")
+        g2p = G2p()
+    
     words = text.upper().split()
     
     phoneme_dict = {}
@@ -482,7 +526,7 @@ def ipa_to_arpabet(ipa_string):
     
     return result
 
-def predict_phonemes_full_audio(audio_data, sr, processor, model):
+def predict_phonemes_full_audio(audio_data, sr, processor, model, device=None):
     """
     Predict phonemes from FULL audio (not segmented)
     This preserves context and avoids cutting issues
@@ -492,6 +536,9 @@ def predict_phonemes_full_audio(audio_data, sr, processor, model):
     if processor is None or model is None:
         print("  ⚠️  No model available")
         return []
+    
+    if device is None:
+        device = DEVICE
     
     try:
         # Ensure 16kHz
@@ -511,8 +558,8 @@ def predict_phonemes_full_audio(audio_data, sr, processor, model):
         else:
             input_values = inputs.input_values
         
-        if DEVICE == "cuda":
-            input_values = input_values.to(DEVICE)
+        if device == "cuda":
+            input_values = input_values.to(device)
         
         # Inference on full audio
         with torch.no_grad():

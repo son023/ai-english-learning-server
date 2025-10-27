@@ -8,7 +8,8 @@ import tempfile
 import os
 import subprocess
 from typing import Optional, List, Tuple
-
+from pydub import AudioSegment
+import io 
 from transformers import pipeline, Wav2Vec2Processor
 from gtts import gTTS
 from difflib import SequenceMatcher
@@ -44,33 +45,32 @@ class PhonemeService:
 
     def load_audio_from_base64(self, audio_base64: str) -> Optional[tuple]:
         """
-        Tải audio từ base64 string, hỗ trợ nhiều format bao gồm WebM.
-        Returns: (audio_data, sample_rate) hoặc None nếu lỗi
+        Tải audio từ base64 string, hỗ trợ nhiều format (mp3, webm, v.v.)
+        *** TỐI ƯU: Dùng pydub để xử lý file trong bộ nhớ ***
         """
         try:
             audio_bytes = base64.b64decode(audio_base64)
+            audio_file = io.BytesIO(audio_bytes)
             
-            with tempfile.NamedTemporaryFile(suffix='.webm', delete=False) as temp_file:
-                temp_path = temp_file.name
-                temp_file.write(audio_bytes)
+            audio_segment = AudioSegment.from_file(audio_file)
             
-            try:
-                audio_data, sample_rate = librosa.load(temp_path, sr=16000, mono=True)
-                audio_data = np.array(audio_data, dtype=np.float32)
-                
-                # Normalize audio
-                max_abs_val = np.max(np.abs(audio_data))
-                if max_abs_val > 0:
-                    audio_data /= max_abs_val
-                
-                return audio_data, sample_rate
-                
-            finally:
-                if os.path.exists(temp_path):
-                    os.unlink(temp_path)
-                    
+            audio_segment = audio_segment.set_frame_rate(16000)
+            audio_segment = audio_segment.set_channels(1) # 1 = Mono
+            
+            wav_io = io.BytesIO()
+            audio_segment.export(wav_io, format="wav")
+            wav_io.seek(0)
+
+            audio_data, sample_rate = librosa.load(wav_io, sr=None) 
+            audio_data = np.array(audio_data, dtype=np.float32)
+            max_abs_val = np.max(np.abs(audio_data))
+            if max_abs_val > 0:
+                audio_data /= max_abs_val
+            
+            return audio_data, sample_rate
+            
         except Exception as e:
-            print(f"Lỗi khi load audio: {e}")
+            print(f"Lỗi khi load audio (với pydub): {e}") 
             traceback.print_exc()
             return None
 
@@ -104,23 +104,17 @@ class PhonemeService:
     def text_to_audio_base64(self, text: str, lang: str = 'en') -> Optional[str]:
         """
         Chuyển đổi text thành audio bằng gTTS và trả về dạng base64.
+        *** TỐI ƯU: Dùng io.BytesIO, không ghi ra đĩa ***
         """
         try:
-            # Tạo file tạm thời
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-                temp_path = temp_file.name
-            
-            # Tạo audio bằng gTTS
+            audio_file = io.BytesIO()
             tts = gTTS(text=text, lang=lang, slow=False)
-            tts.save(temp_path)
             
-            # Đọc file và chuyển thành base64
-            with open(temp_path, 'rb') as audio_file:
-                audio_bytes = audio_file.read()
-                audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
+            tts.write_to_fp(audio_file) 
             
-            # Xóa file tạm
-            os.unlink(temp_path)
+            audio_file.seek(0)
+            audio_bytes = audio_file.read()
+            audio_base64 = base64.b64encode(audio_bytes).decode('utf-8')
             
             return audio_base64
             
@@ -132,28 +126,29 @@ class PhonemeService:
     def compare_phonemes(self, reference_phonemes: str, learner_phonemes: str) -> Tuple[List[dict], float, int, int]:
         """
         So sánh hai chuỗi phoneme và trả về chi tiết so sánh.
-        
-        Returns:
-            - List[dict]: Danh sách so sánh từng phoneme
-            - float: Điểm số phát âm (0-100)
-            - int: Số phoneme đúng
-            - int: Tổng số phoneme
         """
         try:
-            # Tách phoneme thành các đơn vị riêng biệt
             ref_phonemes = reference_phonemes.split()
             learner_phonemes_list = learner_phonemes.split()
             
-            # Sử dụng SequenceMatcher để align các phoneme
-            matcher = SequenceMatcher(None, ref_phonemes, learner_phonemes_list)
+            matcher = SequenceMatcher(None, ref_phonemes, learner_phonemes_list, autojunk=False)
             comparisons = []
             correct_count = 0
             total_count = len(ref_phonemes)
             
-            # Xử lý alignment
+            if total_count == 0 and len(learner_phonemes_list) > 0:
+                for k, learner_phoneme in enumerate(learner_phonemes_list):
+                    comparisons.append({
+                        "position": -1,
+                        "reference_phoneme": "",
+                        "learner_phoneme": learner_phoneme,
+                        "is_correct": False,
+                        "error_type": "insertion"
+                    })
+                return comparisons, 0.0, 0, 0
+
             for tag, i1, i2, j1, j2 in matcher.get_opcodes():
                 if tag == 'equal':
-                    # Phoneme khớp
                     for k in range(i2 - i1):
                         comparisons.append({
                             "position": i1 + k,
@@ -163,21 +158,6 @@ class PhonemeService:
                             "error_type": None
                         })
                         correct_count += 1
-                        
-                elif tag == 'replace':
-                    # Phoneme bị thay thế
-                    ref_slice = ref_phonemes[i1:i2]
-                    learner_slice = learner_phonemes_list[j1:j2]
-                    
-                    for k, ref_phoneme in enumerate(ref_slice):
-                        learner_phoneme = learner_slice[k] if k < len(learner_slice) else ""
-                        comparisons.append({
-                            "position": i1 + k,
-                            "reference_phoneme": ref_phoneme,
-                            "learner_phoneme": learner_phoneme,
-                            "is_correct": False,
-                            "error_type": "substitution"
-                        })
                         
                 elif tag == 'delete':
                     # Phoneme bị thiếu
@@ -200,8 +180,40 @@ class PhonemeService:
                             "is_correct": False,
                             "error_type": "insertion"
                         })
+                        
+                elif tag == 'replace':
+                    ref_slice = ref_phonemes[i1:i2]
+                    learner_slice = learner_phonemes_list[j1:j2]
+                    len_ref = len(ref_slice)
+                    len_learner = len(learner_slice)
+                    max_len = max(len_ref, len_learner)
+
+                    for k in range(max_len):
+                        ref_phoneme = ref_slice[k] if k < len_ref else ""
+                        learner_phoneme = learner_slice[k] if k < len_learner else ""
+                        
+                        is_correct = False
+                        
+                        if k >= len_ref:
+                            error_type = "insertion"
+                            position = -1 
+                        elif k >= len_learner:
+                            error_type = "deletion"
+                            position = i1 + k
+                        else:
+                            error_type = "substitution"
+                            position = i1 + k
+
+                        comparisons.append({
+                            "position": position,
+                            "reference_phoneme": ref_phoneme,
+                            "learner_phoneme": learner_phoneme,
+                            "is_correct": is_correct,
+                            "error_type": error_type
+                        })
             
-            # Tính điểm số
+            comparisons.sort(key=lambda x: x['position'] if x['position'] != -1 else float('inf'))
+            
             pronunciation_score = (correct_count / total_count * 100) if total_count > 0 else 0
             
             return comparisons, pronunciation_score, correct_count, total_count
@@ -267,6 +279,40 @@ class PhonemeService:
             print(f"Lỗi khi đánh giá phát âm từ '{word}': {e}")
             traceback.print_exc()
             return {"error": f"Lỗi xử lý: {str(e)}"}
+
+    def get_processor_and_model(self):
+        """
+        Trả về processor và model để sử dụng lại cho các service khác
+        Tránh phải load lại model nhiều lần
+        """
+        try:
+            model = self.transcriber.model
+            tokenizer = self.transcriber.tokenizer
+            feature_extractor = self.transcriber.feature_extractor
+            
+            class SimpleProcessor:
+                def __init__(self, tokenizer, feature_extractor):
+                    self.tokenizer = tokenizer
+                    self.feature_extractor = feature_extractor
+                
+                def __call__(self, audio, sampling_rate, return_tensors="pt", padding=True):
+                    return self.feature_extractor(
+                        audio, 
+                        sampling_rate=sampling_rate, 
+                        return_tensors=return_tensors, 
+                        padding=padding
+                    )
+                
+                def batch_decode(self, token_ids):
+                    return self.tokenizer.batch_decode(token_ids)
+            
+            processor = SimpleProcessor(tokenizer, feature_extractor)
+            return processor, model
+            
+        except Exception as e:
+            print(f"Lỗi khi lấy processor và model: {e}")
+            traceback.print_exc()
+            return None, None
 
     def get_model_info(self) -> dict:
         return {"model": self.model_name, "status": "loaded"}
