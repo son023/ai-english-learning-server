@@ -1,7 +1,7 @@
 import React from "react";
 import { X, Play, Volume2, Trophy, Target, BookOpen, RefreshCw } from "lucide-react";
 
-const WordResult = ({ show, results, onClose, historyAudioUrl, onPracticeAgain }) => {
+const WordResult = ({ show, results, onClose, historyAudioUrl, onPracticeAgain, sentencePracticeMode, onBackToSentence }) => {
   if (!show || !results) return null;
 
   const getScoreColor = () => {
@@ -161,6 +161,17 @@ const WordResult = ({ show, results, onClose, historyAudioUrl, onPracticeAgain }
                   >
                     <RefreshCw size={20} />
                     Luyện lại từ này
+                  </button>
+                )}
+                
+                {/* Nút quay lại chế độ câu khi trong sentence practice mode */}
+                {sentencePracticeMode && onBackToSentence && (
+                  <button
+                    onClick={onBackToSentence}
+                    className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-lg font-semibold shadow-md transform hover:scale-105 transition-all"
+                  >
+                    <BookOpen size={20} />
+                    Quay lại chế độ câu
                   </button>
                 )}
               </div>

@@ -166,6 +166,28 @@ const PronunciationPractice = ({ page, setPage }) => {
     setupDB();
   }, []);
 
+  // Check nếu quay lại từ WordPronunciationLearning với updated scores
+  useEffect(() => {
+    const returnDataStr = localStorage.getItem('returnToPronunciationPractice');
+    if (returnDataStr) {
+      try {
+        const returnData = JSON.parse(returnDataStr);
+        console.log("PronunciationPractice: Loading return data from word practice:", returnData);
+        
+        // Set lại câu practice để có thể luyện tiếp
+        setPracticeText(returnData.originalSentence);
+        
+        // Clear localStorage
+        localStorage.removeItem('returnToPronunciationPractice');
+        
+        console.log("PronunciationPractice: Sentence restored, ready to practice again");
+      } catch (error) {
+        console.error("PronunciationPractice: Error parsing return data:", error);
+        localStorage.removeItem('returnToPronunciationPractice');
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const fetchPhonemes = async () => {
       if (!practiceText.trim()) {
@@ -773,6 +795,22 @@ const PronunciationPractice = ({ page, setPage }) => {
               />
             ) : null
           }
+          onWordClick={(word) => {
+            // Chuyển đến WordPronunciationLearning với toàn bộ câu và data
+            console.log("Chuyển đến word practice với câu và từ được chọn:", word);
+            setPage('word-learning');
+            
+            // Lưu toàn bộ thông tin câu để WordPronunciationLearning sử dụng
+            const sentenceData = {
+              originalSentence: results.original_sentence || sentence,
+              wordAccuracy: results.word_accuracy || [],
+              selectedWord: word,
+              transcribedText: results.transcribed_text || '',
+              fromPronunciationPractice: true
+            };
+            
+            localStorage.setItem('sentencePracticeData', JSON.stringify(sentenceData));
+          }}
         />
       </main>
     </div>

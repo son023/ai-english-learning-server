@@ -8,6 +8,7 @@ const Result = ({
   historyAudioUrl = null,
   renderColoredText = null,
   alignmentVisualization = null,
+  onWordClick = null, // Callback để chuyển sang word practice
 }) => {
   if (!show || !results) return null;
 
@@ -23,6 +24,60 @@ const Result = ({
     if (score >= 75) return "Tốt";
     if (score >= 60) return "Khá";
     return "Cần cải thiện";
+  };
+
+  // Hàm để lấy màu sắc dựa trên điểm từ (theo yêu cầu mới)
+  const getWordColorClass = (score) => {
+    if (score >= 80) return "text-green-600 bg-green-100"; // Xanh
+    if (score >= 50) return "text-yellow-600 bg-yellow-100"; // Vàng
+    if (score === 0) return "text-red-800 bg-red-200"; // Đỏ đậm cho từ bị thiếu
+    return "text-red-600 bg-red-100"; // Đỏ
+  };
+
+  // Hàm render transcript với color coding
+  const renderColoredTranscript = () => {
+    if (!results.word_accuracy || results.word_accuracy.length === 0) {
+      return <span className="text-gray-500">Không có dữ liệu từ nào</span>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2 text-lg leading-relaxed">
+        {results.word_accuracy.map((wordData, index) => {
+          const colorClass = getWordColorClass(wordData.accuracy_percentage);
+          const isErrorWord = wordData.accuracy_percentage < 80;
+          const isMissing = wordData.accuracy_percentage === 0;
+          
+          return (
+            <button
+              key={index}
+              onClick={() => {
+                if (isErrorWord && onWordClick) {
+                  onWordClick(wordData.word);
+                }
+              }}
+              className={`px-3 py-1 rounded-md font-medium transition-all duration-200 ${colorClass} ${
+                isErrorWord ? 
+                  'cursor-pointer hover:scale-105 hover:shadow-md border-2 border-dashed' : 
+                  'cursor-default border border-transparent'
+              } ${isMissing ? 'opacity-75 line-through' : ''}`}
+              title={
+                isMissing 
+                  ? `Từ bị thiếu: "${wordData.word}" - Click để luyện (0%)`
+                  : isErrorWord 
+                    ? `Click để luyện từ "${wordData.word}" (${wordData.accuracy_percentage.toFixed(1)}%)`
+                    : `Phát âm tốt: ${wordData.accuracy_percentage.toFixed(1)}%`
+              }
+              disabled={!isErrorWord || !onWordClick}
+            >
+              {wordData.word}
+              <span className="ml-1 text-xs opacity-75">
+                {isMissing ? '0%' : wordData.accuracy_percentage.toFixed(0) + '%'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    );
   };
 
   return (
@@ -125,42 +180,37 @@ const Result = ({
             </div>
           </div>
           
-          {renderColoredText && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Highlight lỗi sai
-              </h3>
-              <div className="bg-white rounded-lg p-4 border border-gray-200">
-                {renderColoredText()}
-              </div>
+          {/* Hiển thị reference sentence với color coding */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3 flex items-center gap-2">
+              <span>📝 Câu chuẩn với đánh giá phát âm</span>
+              <span className="text-sm text-gray-500 font-normal">
+                (Click từ đỏ/vàng để luyện tập)
+              </span>
+            </h3>
+            <div className="bg-white rounded-lg p-4 border border-gray-200 mb-3">
+              {renderColoredTranscript()}
             </div>
-          )}
-          
-          {results.phoneme_alignment &&
-            results.phoneme_alignment.length > 0 &&
-            alignmentVisualization && (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                  So sánh phiên âm chi tiết
-                </h3>
-                <div className="bg-white rounded-lg p-4 border border-gray-200">
-                  {alignmentVisualization}
-                </div>
+            
+            {/* Hiển thị transcribed text riêng */}
+            {results.transcribed_text && (
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200 mb-3">
+                <p className="text-sm text-gray-600 mb-1"><strong>Bạn đã đọc:</strong></p>
+                <p className="text-gray-800 italic">"{results.transcribed_text}"</p>
               </div>
             )}
-          
-          {!renderColoredText && results.transcribed_text && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                Văn bản nhận diện
-              </h3>
-              <div className="bg-gradient-to-r from-gray-50 to-blue-50 rounded-lg p-4 border border-gray-200">
-                <p className="text-gray-800 italic font-medium">
-                  "{results.transcribed_text}"
-                </p>
+            
+            <div className="mt-2 text-xs text-gray-500 space-y-1">
+              <div className="flex gap-4 flex-wrap">
+                <span><span className="inline-block w-3 h-3 bg-green-100 rounded mr-1"></span>Xanh: Phát âm tốt (80%+)</span>
+                <span><span className="inline-block w-3 h-3 bg-yellow-100 rounded mr-1"></span>Vàng: Cần cải thiện (50-79%)</span>
+                <span><span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>Đỏ: Cần luyện tập (1-49%)</span>
+                <span><span className="inline-block w-3 h-3 bg-red-200 rounded mr-1 opacity-75"></span>Gạch ngang: Từ bị thiếu (0%)</span>
               </div>
             </div>
-          )}
+          </div>
+          
+          {/* Phần văn bản nhận diện đã được thay thế bởi transcript với color coding ở trên */}
           
           {results.word_accuracy && results.word_accuracy.length > 0 && (
             <div className="mb-6">

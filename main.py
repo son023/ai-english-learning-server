@@ -28,6 +28,7 @@ from services.whisper_service import WhisperService
 from services.pronunciation_service import PronunciationService
 from services.llm_service import LLMService
 from services.phoneme_service import PhonemeService
+from services.pronunciation_assessment import PronunciationAssessmentService
 
 # --- Cấu hình logging (không đổi) ---
 log_file = "app.log"
@@ -63,6 +64,7 @@ pronunciation_service = PronunciationService()
 llm_service = LLMService()
 sentences_service = SentencesService(csv_path=os.path.join(os.path.dirname(__file__), "docs", "sentences.csv"))
 phoneme_service = PhonemeService()
+pronunciation_assessment_service = PronunciationAssessmentService()
 
 @app.on_event("startup")
 async def startup_event():
@@ -70,6 +72,7 @@ async def startup_event():
     try:
         whisper_service.warmup()
         pronunciation_service.warmup()
+        pronunciation_assessment_service.warmup()
         logger.info("Warmup thành công.")
     except Exception as e:
         logger.error(f"Lỗi trong quá trình warmup: {e}")
@@ -81,7 +84,42 @@ async def root():
 
 @app.post("/evaluate-pronunciation-phonetic", response_model=PhoneticPronunciationResponse)
 async def evaluate_pronunciation_phonetic(request: PronunciationRequest):
-    return pronunciation_service.process_phonetic_evaluation(request, whisper_service, llm_service)
+    try:
+        # Use the new pronunciation assessment service
+        result = pronunciation_assessment_service.evaluate_pronunciation_assessment(
+            request.audio_base64, request.sentence
+        )
+        
+        # Convert result to match PhoneticPronunciationResponse format
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        # Convert to the expected response format
+        response_data = {
+            "original_sentence": result.get("original_sentence", request.sentence),
+            "transcribed_text": result.get("transcribed_text", ""),
+            "reference_phonemes": [],
+            "learner_phonemes": [], 
+            "word_accuracy": result.get("word_accuracy", []),
+            "scores": {
+                "pronunciation": result["scores"]["pronunciation"],
+                "fluency": 0,
+                "intonation": 0,
+                "stress": 0,
+                "overall": result["scores"]["overall"]
+            },
+            "phoneme_errors": [],
+            "phoneme_alignment": [],
+            "feedback": result.get("feedback", ""),
+            "wer_score": 0.0,
+            "confidence": 0.9
+        }
+        
+        return response_data
+        
+    except Exception as e:
+        logger.error(f"Error in pronunciation assessment: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/sentences")
 async def get_sentences():
