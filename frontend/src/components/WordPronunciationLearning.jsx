@@ -128,13 +128,18 @@ const WordPronunciationLearning = ({ page, setPage }) => {
   // History states
   const [practiceHistory, setPracticeHistory] = useState([]);
   const [historyAudioUrl, setHistoryAudioUrl] = useState(null);
+  
+  // Sentence practice mode states
+  const [sentencePracticeMode, setSentencePracticeMode] = useState(false);
+  const [sentenceData, setSentenceData] = useState(null);
+  const [updatedWordAccuracy, setUpdatedWordAccuracy] = useState([]);
 
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const dbRef = useRef(null);
   const mainPracticeAreaRef = useRef(null);
 
-  // Khởi tạo DB khi component mount
+  // Khởi tạo DB và check từ được chọn từ pronunciation practice
   useEffect(() => {
     const setupDB = async () => {
       try {
@@ -145,6 +150,51 @@ const WordPronunciationLearning = ({ page, setPage }) => {
         const historyData = await getAllDataFromDB(db);
         console.log("WordPronunciationLearning: History loaded:", historyData);
         setPracticeHistory(historyData);
+
+        // Check nếu có sentence practice data từ pronunciation practice
+        const sentencePracticeDataStr = localStorage.getItem('sentencePracticeData');
+        if (sentencePracticeDataStr) {
+          try {
+            const practiceData = JSON.parse(sentencePracticeDataStr);
+            console.log("WordPronunciationLearning: Loading sentence practice mode:", practiceData);
+            
+            setSentencePracticeMode(true);
+            setSentenceData(practiceData);
+            setUpdatedWordAccuracy([...practiceData.wordAccuracy]); // Copy để có thể update
+            
+            // Auto-select từ được chọn
+            if (practiceData.selectedWord) {
+              setWord(practiceData.selectedWord);
+              setValidationError(validateWord(practiceData.selectedWord));
+            }
+            
+            // Clear localStorage sau khi đã sử dụng
+            localStorage.removeItem('sentencePracticeData');
+            
+            // Focus vào main practice area
+            setTimeout(() => {
+              mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, 100);
+          } catch (error) {
+            console.error("WordPronunciationLearning: Error parsing sentence practice data:", error);
+            localStorage.removeItem('sentencePracticeData');
+          }
+        }
+        
+        // Fallback: Check nếu có từ được chọn từ pronunciation practice (legacy)
+        const selectedWord = localStorage.getItem('selectedWordForPractice');
+        if (selectedWord && !sentencePracticeMode) {
+          console.log("WordPronunciationLearning: Auto-selecting word from pronunciation practice:", selectedWord);
+          setWord(selectedWord);
+          setValidationError(validateWord(selectedWord));
+          // Clear localStorage sau khi đã sử dụng
+          localStorage.removeItem('selectedWordForPractice');
+          
+          // Focus vào main practice area
+          setTimeout(() => {
+            mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        }
       } catch (error) {
         console.error("WordPronunciationLearning: Failed to initialize DB:", error);
       }
@@ -286,6 +336,11 @@ const WordPronunciationLearning = ({ page, setPage }) => {
       
       // Lưu vào lịch sử
       await saveToHistory(response.data, audioBlob);
+      
+      // Nếu đang trong sentence practice mode, cập nhật word accuracy
+      if (sentencePracticeMode && word.trim()) {
+        updateWordAccuracyInSentence(word.trim().toUpperCase(), response.data.pronunciation_score);
+      }
     } catch (error) {
       console.error("Error evaluating pronunciation:", error);
       
@@ -309,6 +364,125 @@ const WordPronunciationLearning = ({ page, setPage }) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Function để update word accuracy trong sentence practice mode
+  const updateWordAccuracyInSentence = (wordToUpdate, newScore) => {
+    setUpdatedWordAccuracy(prevAccuracy => {
+      return prevAccuracy.map(wordData => {
+        if (wordData.word.toUpperCase() === wordToUpdate) {
+          console.log(`Updating word "${wordToUpdate}" score from ${wordData.accuracy_percentage} to ${newScore}`);
+          return {
+            ...wordData,
+            accuracy_percentage: newScore,
+            pronunciation_score: newScore,
+            rhythm_score: newScore * 0.9
+          };
+        }
+        return wordData;
+      });
+    });
+  };
+
+  // Component để hiển thị sentence với color coding
+  const SentencePracticeDisplay = () => {
+    if (!sentencePracticeMode || !sentenceData) return null;
+
+    const getWordColorClass = (score) => {
+      if (score >= 80) return "text-green-600 bg-green-100 border-green-300"; // Xanh
+      if (score >= 50) return "text-yellow-600 bg-yellow-100 border-yellow-300"; // Vàng
+      if (score === 0) return "text-red-800 bg-red-200 border-red-400"; // Đỏ đậm cho từ bị thiếu
+      return "text-red-600 bg-red-100 border-red-300"; // Đỏ thường
+    };
+
+    const handleWordClick = (selectedWord) => {
+      setWord(selectedWord);
+      setValidationError(validateWord(selectedWord));
+      if (result) setResult(null); // Clear previous results
+      
+      // Scroll to practice area
+      setTimeout(() => {
+        mainPracticeAreaRef.current?.scrollIntoView({ behavior: "smooth" });
+      }, 100);
+    };
+
+    return (
+      <div className="card p-6 mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-xl font-semibold text-gray-800"> Câu đang luyện tập</h3>
+          <button
+            onClick={() => {
+              // Lưu dữ liệu câu với updated word accuracy để quay lại pronunciation practice
+              const returnData = {
+                ...sentenceData,
+                wordAccuracy: updatedWordAccuracy,
+                returnFromWordPractice: true
+              };
+              localStorage.setItem('returnToPronunciationPractice', JSON.stringify(returnData));
+              
+              // Chuyển về trang pronunciation practice
+              setPage("pronunciation");
+            }}
+            className="text-sm bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all font-medium shadow-sm"
+          >
+            ← Quay lại luyện câu
+          </button>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
+          <p className="text-sm text-gray-500 mb-2">Click vào từ để luyện tập:</p>
+          <div className="flex flex-wrap gap-2 text-lg leading-relaxed">
+            {updatedWordAccuracy.map((wordData, index) => {
+              const colorClass = getWordColorClass(wordData.accuracy_percentage);
+              const isCurrentWord = word.toUpperCase() === wordData.word.toUpperCase();
+              const isMissing = wordData.accuracy_percentage === 0;
+              
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleWordClick(wordData.word)}
+                  className={`px-3 py-2 rounded-md font-medium transition-all duration-200 border-2 ${colorClass} ${
+                    isCurrentWord ? 'ring-2 ring-blue-500 ring-opacity-50 scale-105' : 'hover:scale-105'
+                  } ${isMissing ? 'opacity-75 line-through' : ''} cursor-pointer hover:shadow-md`}
+                  title={
+                    isMissing 
+                      ? `Từ bị thiếu: "${wordData.word}" - Click để luyện (0%)`
+                      : `Click để luyện "${wordData.word}" (${wordData.accuracy_percentage.toFixed(1)}%)`
+                  }
+                >
+                  {wordData.word}
+                  <span className="ml-1 text-xs opacity-75">
+                    {isMissing ? '0%' : wordData.accuracy_percentage.toFixed(0) + '%'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          
+          <div className="mt-3 text-xs text-gray-500 space-y-1">
+            <div className="flex gap-4 flex-wrap">
+              <span><span className="inline-block w-3 h-3 bg-green-100 rounded mr-1"></span>Xanh: Phát âm tốt (80%+)</span>
+              <span><span className="inline-block w-3 h-3 bg-yellow-100 rounded mr-1"></span>Vàng: Cần cải thiện (50-79%)</span>
+              <span><span className="inline-block w-3 h-3 bg-red-100 rounded mr-1"></span>Đỏ: Cần luyện tập (1-49%)</span>
+              <span><span className="inline-block w-3 h-3 bg-red-200 rounded mr-1 opacity-75"></span>Gạch ngang: Từ bị thiếu (0%)</span>
+            </div>
+          </div>
+          
+          <div className="mt-3 text-sm text-gray-600 bg-gray-50 rounded-lg p-3 space-y-1">
+            <div><strong>Câu gốc:</strong> {sentenceData.originalSentence}</div>
+            {sentenceData.transcribedText && (
+              <div><strong>Bạn đã đọc:</strong> {sentenceData.transcribedText}</div>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-700">
+            <strong> Mục tiêu:</strong> Luyện tập các từ đỏ và vàng cho đến khi tất cả từ đều xanh (80%+)
+          </p>
+        </div>
+      </div>
+    );
   };
 
   const resetAll = useCallback(() => {
@@ -399,15 +573,26 @@ const WordPronunciationLearning = ({ page, setPage }) => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-[calc(100vh-140px)]">
           <section ref={mainPracticeAreaRef} className="md:col-span-2 space-y-6 overflow-y-auto pr-4 scroll-mt-4">
-            {/* Word Suggestions */}
-            <article className="card p-6">
-              <WordSuggestions onSelectWord={handleSelectWord} currentWord={word} />
-            </article>
+            {/* Sentence Practice Display - hiển thị khi trong sentence practice mode */}
+            <SentencePracticeDisplay />
+            
+            {/* Word Suggestions - ẩn khi trong sentence practice mode */}
+            {!sentencePracticeMode && (
+              <article className="card p-6">
+                <WordSuggestions onSelectWord={handleSelectWord} currentWord={word} />
+              </article>
+            )}
 
             {/* Input Section */}
             <article className="card p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Nhập từ muốn luyện</h2>
+                <h2 className="text-xl font-semibold text-gray-800">
+                  {sentencePracticeMode ? (
+                    <>🎯 Luyện từ trong câu: <span className="text-blue-600">{word || "Chọn từ ở trên"}</span></>
+                  ) : (
+                    "Nhập từ muốn luyện"
+                  )}
+                </h2>
                 <button
                   onClick={playWordPronunciation}
                   disabled={!word.trim() || validationError}
@@ -518,26 +703,50 @@ const WordPronunciationLearning = ({ page, setPage }) => {
            <article className="card p-6">
              <div className="flex items-center gap-3 mb-4">
                <BookOpen className="w-6 h-6 text-indigo-600" />
-               <h3 className="text-lg font-semibold text-gray-800">Hướng dẫn sử dụng</h3>
+               <h3 className="text-lg font-semibold text-gray-800">
+                 {sentencePracticeMode ? "Hướng dẫn luyện câu" : "Hướng dẫn sử dụng"}
+               </h3>
              </div>
-             <ul className="space-y-2 text-gray-700">
-               <li className="flex items-start gap-2">
-                 <span className="font-bold text-indigo-600">1.</span>
-                 <span>Nhập một từ tiếng Anh bạn muốn luyện phát âm</span>
-               </li>
-               <li className="flex items-start gap-2">
-                 <span className="font-bold text-indigo-600">2.</span>
-                 <span>Nhấn "Bắt đầu ghi âm" và phát âm từ đó rõ ràng</span>
-               </li>
-               <li className="flex items-start gap-2">
-                 <span className="font-bold text-indigo-600">3.</span>
-                 <span>Nhấn "Dừng ghi âm" khi đã phát âm xong</span>
-               </li>
-               <li className="flex items-start gap-2">
-                 <span className="font-bold text-indigo-600">4.</span>
-                 <span>Nhấn "Đánh giá phát âm" để xem kết quả chi tiết</span>
-               </li>
-             </ul>
+             
+             {sentencePracticeMode ? (
+               <ul className="space-y-2 text-gray-700">
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">1.</span>
+                   <span>Click vào từ có màu đỏ hoặc vàng trong câu ở trên để luyện tập</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">2.</span>
+                   <span>Ghi âm phát âm từ đó rõ ràng và gửi đánh giá</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">3.</span>
+                   <span>Xem kết quả và điểm số được cập nhật trong câu</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">4.</span>
+                   <span>Tiếp tục luyện các từ khác cho đến khi tất cả từ đều xanh (80%+)</span>
+                 </li>
+               </ul>
+             ) : (
+               <ul className="space-y-2 text-gray-700">
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">1.</span>
+                   <span>Nhập một từ tiếng Anh bạn muốn luyện phát âm</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">2.</span>
+                   <span>Nhấn "Bắt đầu ghi âm" và phát âm từ đó rõ ràng</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">3.</span>
+                   <span>Nhấn "Dừng ghi âm" khi đã phát âm xong</span>
+                 </li>
+                 <li className="flex items-start gap-2">
+                   <span className="font-bold text-indigo-600">4.</span>
+                   <span>Nhấn "Đánh giá phát âm" để xem kết quả chi tiết</span>
+                 </li>
+               </ul>
+             )}
            </article>
          )}
          </section>
@@ -611,15 +820,22 @@ const WordPronunciationLearning = ({ page, setPage }) => {
        <WordResult
          show={showResultsModal}
          results={result}
-         onClose={() => {
-           setShowResultsModal(false);
-           if (historyAudioUrl) {
-             URL.revokeObjectURL(historyAudioUrl);
-             setHistoryAudioUrl(null);
-           }
-         }}
-         historyAudioUrl={historyAudioUrl}
-         onPracticeAgain={handlePracticeAgain}
+        onClose={() => {
+          setShowResultsModal(false);
+          if (historyAudioUrl) {
+            URL.revokeObjectURL(historyAudioUrl);
+            setHistoryAudioUrl(null);
+          }
+        }}
+        historyAudioUrl={historyAudioUrl}
+        onPracticeAgain={handlePracticeAgain}
+        sentencePracticeMode={sentencePracticeMode}
+        onBackToSentence={() => {
+          setShowResultsModal(false);
+          setResult(null);
+          setAudioBlob(null);
+          // Không clear word để user có thể tiếp tục với từ này hoặc chọn từ khác
+        }}
        />
        </main>
      </div>
